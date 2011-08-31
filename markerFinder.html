@@ -1,0 +1,279 @@
+<html>
+<head>
+<style> </style>
+
+<script type="text/javascript" src="libs/pixastic/pixastic.core.js"></script>
+<script type="text/javascript" src="libs/pixastic/actions/histogram.js"></script>
+<script type="text/javascript">
+
+var myCanvas;
+
+var img;
+var imgWidth, imgHeight;
+var imgScale = 1.0;
+var fileName="";
+
+var points = [];
+
+function setup()
+{
+	document.getElementById('imageFile').addEventListener('change', handleImageSelect, false);
+	document.getElementById('canvas').addEventListener('click', handleCanvasClick, false);
+
+
+
+
+
+	var holder = document.getElementById('canvas');
+
+	holder.ondragover = function () { this.className = 'hover'; return false; };
+	holder.ondragend = function () { this.className = ''; return false; };
+	holder.ondrop = function (e) {
+		this.className = '';
+		e.preventDefault();
+
+		var file = e.dataTransfer.files[0];
+		reader.onload = function (event) {
+		var reader = new FileReader();
+			alert("xx");
+			img = new Image();
+			img.onload = function() {
+				alert("xxx :)");
+				drawImage(img);
+			};
+			img.src = event.target.result ;
+		};
+		reader.readAsDataURL(file);
+
+		return false;
+	};
+
+
+
+}
+
+
+
+
+
+
+function handleImageSelect(evt) {
+	var files = evt.target.files; // FileList object
+
+
+	// display an image
+	var file = files[0];
+
+	if (file.type.indexOf("image") == 0) {
+		var reader = new FileReader();
+		reader.onload = function(e) {
+
+			img = new Image();
+			img.onload = function(){
+				drawImage(img);
+			}
+			img.src = e.target.result;
+		}
+		reader.readAsDataURL(file);
+	}
+
+	return;
+
+/*
+
+	var file = files[0];
+	var reader = new FileReader();
+	reader.onload = function (event) {
+		alert("dd");
+		img = new Image();
+		img.onload = function() {
+			drawImage(img);
+		};
+		img.src = event.target.result;
+	};
+	reader.readAsDataURL(file);
+
+	return;
+*/
+	
+	img = new Image();
+	img.onload = function(){
+		drawImage(img);
+	}
+	fileName = files[0].fileName;
+	img.src = fileName; //files[0];
+
+	hiddenImage.src = fileName;
+}
+
+function handleCanvasClick(evt) {
+	var canvas = document.getElementById('canvas');
+	coords = canvas.relMouseCoords(event);
+
+	var context = canvas.getContext('2d');
+	context.beginPath();
+	
+	var x = coords.x/imgScale;
+	var y = coords.y/imgScale;
+
+	//var pixels = context.getImageData(110,110,120,120);
+	var pixels = context.getImageData(0,0, canvas.width, canvas.height);
+
+	var bwPixels = Filters.RGBA2A(pixels, context);
+
+	var grayPixels = Filters.A2RGBA(bwPixels, context);
+	
+	context.putImageData(grayPixels, 110,110);
+}
+  
+function drawImage(img) {
+	var canvas = document.getElementById('canvas');
+	
+	canvas.width = img.width;
+	canvas.height = img.height;
+	imgWidth = img.width;
+	imgHeight = img.height;
+	
+	var context = canvas.getContext('2d');
+	context.drawImage(img, 0, 0, img.width, img.height);
+	
+	
+} 
+
+function scaleImage(scale)
+{
+	imgScale *= scale;
+	var canvas = document.getElementById('canvas');
+	canvas.style.width = "" + (imgWidth*imgScale) +"px";
+	canvas.style.height = "" + (imgHeight*imgScale) +"px";
+	// 		
+	//canvas.height = imgHeight;
+}
+
+
+function relMouseCoords(event){
+    var totalOffsetX = 0;
+    var totalOffsetY = 0;
+    var canvasX = 0;
+    var canvasY = 0;
+    var currentElement = this;
+
+    do{
+        totalOffsetX += currentElement.offsetLeft;
+        totalOffsetY += currentElement.offsetTop;
+    }
+    while(currentElement = currentElement.offsetParent)
+
+    canvasX = event.pageX - totalOffsetX;
+    canvasY = event.pageY - totalOffsetY;
+
+    return {x:canvasX, y:canvasY}
+}
+HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
+
+var hist = {};
+function handleTestClick()
+{
+	
+	Pixastic.process(document.getElementById("hiddenImage"), "histogram", {
+		average : false, paint:true,color:"rgba(255,255,255,0.5)",returnValue:hist
+	});
+	document.getElementById('debugText').value = hist.values;
+}
+
+Filters = {};
+Filters.getPixels = function(img) {
+  var c = this.getCanvas(img.width, img.height);
+  var ctx = c.getContext('2d');
+  ctx.drawImage(img);
+  return ctx.getImageData(0,0,c.width,c.height);
+};
+
+Filters.getCanvas = function(w,h) {
+  var c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  return c;
+};
+
+
+Filters.RGBA2A = function(pixels, context) {
+	var d = pixels.data;
+	var out = {};
+	var outData = out.data = [];
+	out.width = pixels.width;
+	out.height = pixels.height;
+
+	var j = 0;
+	for (var i=0; i<d.length; i+=4) {
+		var r = d[i];
+		var g = d[i+1];
+		var b = d[i+2];
+		outData[j] = 0.2126*r + 0.7152*g + 0.0722*b;
+		j++;
+		
+	}
+	return out;
+};
+
+Filters.A2RGBA = function(pixels, context) {
+	var d = pixels.data;
+	var out = context.createImageData(pixels.width,pixels.height);
+	var outData = out.data;
+	out.width = pixels.width;
+	out.height = pixels.height;
+
+	var j = 0;
+	for (var i=0; i<d.length; i++) {
+		var v = d[i];
+
+		outData[j] = outData[j+1] = outData[j+2] = v;
+		outData[j+3] = 255;
+		j += 4;
+	}
+	return out;
+};
+
+
+
+function rgbDist(r1, g1, b1,   r2, g2, b2)
+{
+	return abs(r1-r2)+abs(g1-g2)+abs(b1-b2);
+}
+
+
+var blackMax = 0;
+function fill4(x, y, r1, neueFarbe) {
+ 
+  if (getPixel(x, y) == alteFarbe){
+     
+     markierePixel(x, y, neueFarbe);
+     
+     fill4(x, y + 1, alteFarbe, neueFarbe); // unten
+     fill4(x - 1, y, alteFarbe, neueFarbe); // links
+     fill4(x, y - 1, alteFarbe, neueFarbe); // oben
+     fill4(x + 1, y, alteFarbe, neueFarbe); // rechts
+  
+  }
+  return;
+}
+
+</script>
+
+
+</head>
+<body onload="setup()">
+<form name="controls" action="">
+	<input type="button" value="Reset" onclick="handleReset();">
+	<input type="file" value="imageFile" id="imageFile" />
+	<input type="button" value="scale/1.2" onclick="scaleImage(1/1.2);"><input type="button" value="scale*1.2" onclick="scaleImage(1.2);">
+	<input type="text" name="outputText" id="outputText" />
+	<input type="button" value="TestButton" onclick="handleTestClick();">
+	<input type="text" name="debugText" id="debugText" />
+</form>
+<canvas id="canvas" width="400" height="300"></canvas>
+<img id="hiddenImage" src="http://www.google.at/logos/2011/goethe-2011-res.png"></img>
+
+	
+</body>
+</html>
