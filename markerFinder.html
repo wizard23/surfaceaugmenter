@@ -6,14 +6,10 @@
 <script type="text/javascript" src="libs/pixastic/actions/histogram.js"></script>
 <script type="text/javascript">
 
-var myCanvas;
-
 var img;
 var imgWidth, imgHeight;
-var imgScale = 1.0;
-var fileName="";
 
-var points = [];
+var imgScale = 1.0;
 
 function setup()
 {
@@ -33,23 +29,11 @@ function setup()
 		e.preventDefault();
 
 		var file = e.dataTransfer.files[0];
-		reader.onload = function (event) {
-		var reader = new FileReader();
-			alert("xx");
-			img = new Image();
-			img.onload = function() {
-				alert("xxx :)");
-				drawImage(img);
-			};
-			img.src = event.target.result ;
-		};
-		reader.readAsDataURL(file);
-
-		return false;
+		asyncLoadImageFromFile(file);
 	};
 
 
-
+	asyncLoadImageFromURL("images/test1.png")
 }
 
 
@@ -59,51 +43,27 @@ function setup()
 
 function handleImageSelect(evt) {
 	var files = evt.target.files; // FileList object
-
-
-	// display an image
 	var file = files[0];
+	asyncLoadImageFromFile(file);
+}
 
+function asyncLoadImageFromFile(file) {
 	if (file.type.indexOf("image") == 0) {
 		var reader = new FileReader();
 		reader.onload = function(e) {
-
-			img = new Image();
-			img.onload = function(){
-				drawImage(img);
-			}
-			img.src = e.target.result;
+			asyncLoadImageFromURL(e.target.result);
 		}
 		reader.readAsDataURL(file);
 	}
+}
 
-	return;
-
-/*
-
-	var file = files[0];
-	var reader = new FileReader();
-	reader.onload = function (event) {
-		alert("dd");
-		img = new Image();
-		img.onload = function() {
-			drawImage(img);
-		};
-		img.src = event.target.result;
-	};
-	reader.readAsDataURL(file);
-
-	return;
-*/
-	
+function asyncLoadImageFromURL(url) {
 	img = new Image();
-	img.onload = function(){
+	img.onload = function() {
 		drawImage(img);
 	}
-	fileName = files[0].fileName;
-	img.src = fileName; //files[0];
-
-	hiddenImage.src = fileName;
+	img.src = url;
+	return img;
 }
 
 function handleCanvasClick(evt) {
@@ -123,7 +83,7 @@ function handleCanvasClick(evt) {
 
 	var grayPixels = Filters.A2RGBA(bwPixels, context);
 	
-	context.putImageData(grayPixels, 110,110);
+	context.putImageData(grayPixels, 60, 60);
 }
   
 function drawImage(img) {
@@ -175,7 +135,7 @@ var hist = {};
 function handleTestClick()
 {
 	
-	Pixastic.process(document.getElementById("hiddenImage"), "histogram", {
+	Pixastic.process(document.getElementById("canvas"), "histogram", {
 		average : false, paint:true,color:"rgba(255,255,255,0.5)",returnValue:hist
 	});
 	document.getElementById('debugText').value = hist.values;
@@ -263,6 +223,7 @@ function fill4(x, y, r1, neueFarbe) {
 
 </head>
 <body onload="setup()">
+
 <form name="controls" action="">
 	<input type="button" value="Reset" onclick="handleReset();">
 	<input type="file" value="imageFile" id="imageFile" />
@@ -271,9 +232,8 @@ function fill4(x, y, r1, neueFarbe) {
 	<input type="button" value="TestButton" onclick="handleTestClick();">
 	<input type="text" name="debugText" id="debugText" />
 </form>
-<canvas id="canvas" width="400" height="300"></canvas>
-<img id="hiddenImage" src="http://www.google.at/logos/2011/goethe-2011-res.png"></img>
 
+<canvas id="canvas" width="400" height="300"></canvas>
 	
 </body>
 </html>
