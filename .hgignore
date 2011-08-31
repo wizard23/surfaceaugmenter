@@ -2,4 +2,7 @@
 syntax: glob
 
 *.jpg
+*.JPG
+*.Jpg
 *.png
+*.PNG
