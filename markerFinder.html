@@ -12,6 +12,8 @@ var img;
 var imgWidth, imgHeight;
 
 var imgScale = 1.0;
+var points = [];
+var pixels, bwPixels;
 
 function setup()
 {
@@ -41,13 +43,60 @@ function handleImageSelect(evt) {
 
 function handleCanvasClick(evt) {
 	var canvas = document.getElementById('canvas');
-	coords = canvas.relMouseCoords(event);
-
 	var context = canvas.getContext('2d');
-	context.beginPath();
 	
+	if (!pixels) {
+		pixels = context.getImageData(0,0, canvas.width, canvas.height);
+		bwPixels = Filters.RGBA2A(pixels, context);
+	}
+
+	var coords = canvas.relMouseCoords(event);
 	var x = coords.x/imgScale;
 	var y = coords.y/imgScale;
+
+	if (x >= 0 && x < imgWidth && y >= 0 && y < imgHeight)
+		points.push([x, y]);
+
+	context.beginPath();
+	context.arc(x, y, 3, 0, Math.PI*2, true); 
+	context.closePath();
+	context.fill();
+	
+	if (points.length == 2)
+	{
+		var sum = 0;
+		var n = 0;
+		var w = bwPixels.width;
+
+		xiaolinWuLineIterator(points[0][0],points[0][1], points[1][0], points[1][1], function(x, y, c) { 
+			n++; 
+			sum += bwPixels[x+w*y];
+			pixels.data[4*(x+w*y)] = 255;
+			pixels.data[4*(x+w*y)+1] = 0;
+			pixels.data[4*(x+w*y)+2] = 255;
+			pixels.data[4*(x+w*y)+3] = 256 * c;
+		});
+
+		/*
+		lineIterator(points[0][0],points[0][1], points[1][0], points[1][1], function(x, y) { 
+			n++; 
+			sum += bwPixels[x+w*y];
+			pixels.data[4*(x+w*y)] = 255 - pixels.data[4*(x+w*y)];
+			pixels.data[4*(x+w*y)+1] = 255 - pixels.data[4*(x+w*y)+1];
+			pixels.data[4*(x+w*y)+2] = 255 - pixels.data[4*(x+w*y)+2];
+		});
+		//*/
+		//alert("s: " + sum + " n: " + n + " " + (sum/n));
+
+		context.putImageData(pixels, 0, 0);
+		
+		//document.getElementById('outputText').value = "convert ..\\..\\web\\" + fileName + " -virtual-pixel transparent -distort Perspective \"" + s + "\" " + fileName + "out.png";
+		//handleLoad(img);
+		points = [];
+	}
+
+
+	return;
 
 	//var pixels = context.getImageData(110,110,120,120);
 	var pixels = context.getImageData(0,0, canvas.width, canvas.height);

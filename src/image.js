@@ -1,4 +1,5 @@
-Filters = {};
+var Filters = {};
+
 Filters.getPixels = function(img) {
   var c = this.getCanvas(img.width, img.height);
   var ctx = c.getContext('2d');
@@ -105,7 +106,8 @@ function lineIterator(x0, y0, x1, y1, callback) {
 		y1 = tmp;
 	}	
 	var deltax = x1 - x0;
-	var deltay = disty;
+	var deltay = y1 - y0;
+	if (deltay < 0) deltay = -deltay;
 	var error = deltax / 2;
 	var ystep;
 	var y = y0;
@@ -122,3 +124,72 @@ function lineIterator(x0, y0, x1, y1, callback) {
 		}
 	}
 }
+
+
+///////////////////////
+
+
+function ipart(x) {
+    return Math.floor(x);
+}
+
+function fpart(x) {
+    return x - Math.floor(x);
+}
+
+function rfpart(x) {
+    return Math.ceil(x) - x;
+}
+
+///*
+// adapted from: http://en.wikipedia.org/wiki/Xiaolin_Wu%27s_line_algorithm
+
+function xiaolinWuLineIterator(x1,y1, x2,y2,  plot) {
+	var dx = x2 - x1;
+	var dy = y2 - y1;
+	
+	if (Math.abs(dx) < Math.abs(dy)) {                 
+		var t;
+		t = x1; x1 = y1; y1 = t;
+		t = x2; x2 = y2; y2 = t;
+		t = dx; dx = dy; dy = t;
+		//swap x1, y1
+		//swap x2, y2
+		//swap dx, dy
+	}
+	if (x2 < x1) {
+		//swap x1, x2
+		//swap y1, y2
+		t = x1; x1 = x2; x2 = t;
+		t = y1; y1 = y2; y2 = t;
+	}
+	var gradient = dy / dx;
+
+	// handle first endpoint
+	var xend = Math.round(x1);
+	var yend = y1 + gradient * (xend - x1);
+	var xgap = rfpart(x1 + 0.5);
+	var xpxl1 = xend;  // this will be used in the main loop
+	var ypxl1 = ipart(yend);
+
+	plot(xpxl1, ypxl1, rfpart(yend) * xgap);
+	plot(xpxl1, ypxl1 + 1, fpart(yend) * xgap);
+	var intery = yend + gradient; // first y-intersection for the main loop
+
+	// handle second endpoint
+	xend = Math.round(x2);
+	yend = y2 + gradient * (xend - x2);
+	xgap = fpart(x2 + 0.5);
+	var xpxl2 = xend;  // this will be used in the main loop
+	var ypxl2 = ipart(yend);
+	plot(xpxl2, ypxl2, rfpart(yend) * xgap);
+	plot(xpxl2, ypxl2 + 1, fpart(yend) * xgap);
+
+	// main loop
+	for (x = xpxl1 + 1; x <= xpxl2 - 1; x++) {
+		plot (x, ipart(intery), rfpart(intery));
+		plot (x, ipart(intery) + 1, fpart(intery));
+		intery = intery + gradient;
+	}
+}
+
