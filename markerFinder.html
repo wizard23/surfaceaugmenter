@@ -71,10 +71,10 @@ function handleCanvasClick(evt) {
 		xiaolinWuLineIterator(points[0][0],points[0][1], points[1][0], points[1][1], function(x, y, c) { 
 			n++; 
 			sum += bwPixels[x+w*y];
-			pixels.data[4*(x+w*y)] = 255;
-			pixels.data[4*(x+w*y)+1] = 0;
-			pixels.data[4*(x+w*y)+2] = 255;
-			pixels.data[4*(x+w*y)+3] = 256 * c;
+			pixels.data[4*(x+w*y)] = (1-c) * pixels.data[4*(x+w*y)] + c * 255;
+			pixels.data[4*(x+w*y)+1] = (1-c) * pixels.data[4*(x+w*y)+1] + c * 0;
+			pixels.data[4*(x+w*y)+2] = (1-c) * pixels.data[4*(x+w*y)+2] + c * 255;
+			//pixels.data[4*(x+w*y)+3] = 255;
 		});
 
 		/*
