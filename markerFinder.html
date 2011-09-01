@@ -32,7 +32,7 @@ function setup()
 	};
 
 
-	asyncLoadImageFromURL("test1.png")
+	asyncLoadImageFromURL("images/marker_detail.JPG");
 }
 
 function handleImageSelect(evt) {
@@ -70,13 +70,14 @@ function handleCanvasClick(evt) {
 		var w = bwPixels.width;
 
 		xiaolinWuLineIterator(points[0][0],points[0][1], points[1][0], points[1][1], function(x, y, c) { 
-			n++; 
-			sum += bwPixels[x+w*y];
+			n += c; 
+			sum += c* bwPixels.data[x+w*y];
 			pixels.data[4*(x+w*y)] = (1-c) * pixels.data[4*(x+w*y)] + c * 0;
 			pixels.data[4*(x+w*y)+1] = (1-c) * pixels.data[4*(x+w*y)+1] + c * 0;
 			pixels.data[4*(x+w*y)+2] = (1-c) * pixels.data[4*(x+w*y)+2] + c * 0;
 			//pixels.data[4*(x+w*y)+3] = 255;
 		});
+		alert("s: " + sum + " n: " + n + " avg: " + (sum/n));
 
 		/*
 		lineIterator(points[0][0],points[0][1], points[1][0], points[1][1], function(x, y) { 
@@ -124,11 +125,39 @@ function scaleImage(scale)
 var hist = {};
 function handleTestClick()
 {
+	var canvas = document.getElementById('canvas');
+	var context = canvas.getContext('2d');
+
+	//var pixels = context.getImageData(110,110,120,120);
+	var pixels = context.getImageData(0,0, canvas.width, canvas.height);
+
+	var bwPixels = Filters.RGBA2A(pixels, context);
+	var bwPixelsSobolev = Filters.RGBA2A(pixels, context);
+
 	
+
+	var x, y;
+
+	applyKernelAlphaOnPixels(bwPixels, dxx, bwPixelsSobolev)
+
+	var grayPixels = Filters.A2RGBA(bwPixelsSobolev, context);
+	context.putImageData(grayPixels, 0,0);
+
+
+	return;
+
 	Pixastic.process(document.getElementById("canvas"), "histogram", {
 		average : false, paint:true,color:"rgba(255,255,255,0.5)",returnValue:hist
 	});
 	document.getElementById('debugText').value = hist.values;
+}
+
+
+function xffdlj() {
+
+	//pixels = context.getImageData(0,0, canvas.width, canvas.height);
+	//bwPixels = Filters.RGBA2A(pixels, context);
+	// applyKernelAlpha(pixels, kernel, x, y)
 }
 
 </script>

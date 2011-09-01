@@ -76,6 +76,44 @@ function fill4(x, y, r1, neueFarbe) {
   return;
 }
 
+var dxx = {data:[-1,0,1,  -2,0,2,  -1,0,1], width:3, height:3, scale:1};
+var dyy = {data:[-1,-2,-1,  0,0,0,  1,2,1], width:3, height:3, scale:1};
+  
+
+function applyKernelAlphaOnPixel(pixels, kernel, x, y)
+{
+	var xx, yy, kernelIndex, pixelIndex;
+	var sum = 0;
+
+	var startx = (kernel.width-1)/2;
+	var starty = (kernel.height-1)/2;
+
+	kernelIndex = 0;
+	for (yy = -starty; yy <= starty; yy++) {
+		for (xx = -startx; xx <= startx; xx++) {
+			var xxx = x + xx;
+			var yyy = y + xx;
+			if (xxx > 0 && yyy > 0 && xxx < pixels.width && yyy < pixels.height) {
+				pixelIndex =  xxx + yyy*pixels.height;
+				sum += kernel.data[kernelIndex]*pixels.data[pixelIndex]/255;
+			}
+			kernelIndex++;
+		}
+	}
+	return sum*kernel.scale;
+}
+
+function applyKernelAlphaOnPixels(pixels, kernel, pixelsOut)
+{
+	var outIndex = 0;
+	for (y = 0; y < pixels.width; y++) {
+		for (x = 0; x < pixels.height; x++) {
+			pixelsOut.data[outIndex] = applyKernelAlphaOnPixel(pixels, kernel, x, y);
+			outIndex++;
+		}
+	}
+}
+
 
 // adapted from: http://en.wikipedia.org/wiki/Bresenham's_line_algorithm
 function lineIterator(x0, y0, x1, y1, callback) {
@@ -125,7 +163,6 @@ function lineIterator(x0, y0, x1, y1, callback) {
 	}
 }
 
-
 ///////////////////////
 // adapted from: http://en.wikipedia.org/wiki/Xiaolin_Wu%27s_line_algorithm
 
@@ -142,13 +179,12 @@ function rfpart(x) {
 }
 
 function xiaolinWuLineIterator(x1,y1, x2,y2,  plot) {
-    var swapPlot = function(swapAxes, x, y, c) { if (swapAxes) plot(y, x, c); else plot(x, y, c); };
+    var swapPlot;
     var dx = x2 - x1;
     var dy = y2 - y1;
-    var swapAxes = false;
 
     if (Math.abs(dx) < Math.abs(dy)) {    
-        swapAxes=true;             
+        swapPlot = function(x, y, c) { plot(y, x, c); };             
         var t;
         t = x1; x1 = y1; y1 = t;
         t = x2; x2 = y2; y2 = t;
@@ -157,6 +193,9 @@ function xiaolinWuLineIterator(x1,y1, x2,y2,  plot) {
         //swap x2, y2
         //swap dx, dy
     }
+    else
+	swapPlot = function(x, y, c) { plot(x, y, c); };  
+
     if (x2 < x1) {
         //swap x1, x2
         //swap y1, y2
@@ -172,8 +211,8 @@ function xiaolinWuLineIterator(x1,y1, x2,y2,  plot) {
     var xpxl1 = xend;  // this will be used in the main loop
     var ypxl1 = ipart(yend);
 
-    swapPlot(swapAxes, xpxl1, ypxl1, rfpart(yend) * xgap);
-    swapPlot(swapAxes, xpxl1, ypxl1 + 1, fpart(yend) * xgap);
+    swapPlot(xpxl1, ypxl1, rfpart(yend) * xgap);
+    swapPlot(xpxl1, ypxl1 + 1, fpart(yend) * xgap);
     var intery = yend + gradient; // first y-intersection for the main loop
 
     // handle second endpoint
@@ -182,13 +221,13 @@ function xiaolinWuLineIterator(x1,y1, x2,y2,  plot) {
     xgap = fpart(x2 + 0.5);
     var xpxl2 = xend;  // this will be used in the main loop
     var ypxl2 = ipart(yend);
-    swapPlot(swapAxes, xpxl2, ypxl2, rfpart(yend) * xgap);
-    swapPlot(swapAxes, xpxl2, ypxl2 + 1, fpart(yend) * xgap);
+    swapPlot(xpxl2, ypxl2, rfpart(yend) * xgap);
+    swapPlot(xpxl2, ypxl2 + 1, fpart(yend) * xgap);
 
     // main loop
     for (x = xpxl1 + 1; x <= xpxl2 - 1; x++) {
-        swapPlot(swapAxes, x, ipart(intery), rfpart(intery));
-        swapPlot(swapAxes, x, ipart(intery) + 1, fpart(intery));
+        swapPlot(x, ipart(intery), rfpart(intery));
+        swapPlot(x, ipart(intery) + 1, fpart(intery));
         intery = intery + gradient;
     }
 }
