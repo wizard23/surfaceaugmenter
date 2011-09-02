@@ -92,10 +92,10 @@ function applyKernelAlphaOnPixel(pixels, kernel, x, y)
 	for (yy = -starty; yy <= starty; yy++) {
 		for (xx = -startx; xx <= startx; xx++) {
 			var xxx = x + xx;
-			var yyy = y + xx;
+			var yyy = y + yy;
 			if (xxx > 0 && yyy > 0 && xxx < pixels.width && yyy < pixels.height) {
-				pixelIndex =  xxx + yyy*pixels.height;
-				sum += kernel.data[kernelIndex]*pixels.data[pixelIndex]/255;
+				pixelIndex =  xxx + yyy*pixels.width;
+				sum += kernel.data[kernelIndex]*pixels.data[pixelIndex];
 			}
 			kernelIndex++;
 		}
@@ -103,12 +103,14 @@ function applyKernelAlphaOnPixel(pixels, kernel, x, y)
 	return sum*kernel.scale;
 }
 
-function applyKernelAlphaOnPixels(pixels, kernel, pixelsOut)
+function applyKernelAlphaOnPixels(pixels, kernelx, kernely, pixelsOut)
 {
 	var outIndex = 0;
-	for (y = 0; y < pixels.width; y++) {
-		for (x = 0; x < pixels.height; x++) {
-			pixelsOut.data[outIndex] = applyKernelAlphaOnPixel(pixels, kernel, x, y);
+	for (y = 0; y < pixels.height; y++) {
+		for (x = 0; x < pixels.width; x++) {
+			var dx = applyKernelAlphaOnPixel(pixels, kernelx, x, y);
+			var dy = applyKernelAlphaOnPixel(pixels, kernely, x, y);
+			pixelsOut.data[outIndex] = Math.sqrt(dx*dx+dy*dy);
 			outIndex++;
 		}
 	}
