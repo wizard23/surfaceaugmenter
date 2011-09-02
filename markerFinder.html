@@ -9,6 +9,7 @@
 <script type="text/javascript" src="libs/pixastic/actions/histogram.js"></script>
 <script type="text/javascript">
 
+
 var img;
 var imgWidth, imgHeight;
 
@@ -78,7 +79,7 @@ function handleCanvasClick(evt) {
 			pixels.data[4*(x+w*y)+2] = (1-c) * pixels.data[4*(x+w*y)+2] + c * 0;
 			//pixels.data[4*(x+w*y)+3] = 255;
 		});
-		//alert("s: " + sum + " n: " + n + " avg: " + (sum/n));
+		alert("s: " + sum + " n: " + n + " avg: " + (sum/n));
 
 		/*
 		lineIterator(points[0][0],points[0][1], points[1][0], points[1][1], function(x, y) { 

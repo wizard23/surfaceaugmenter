@@ -60,20 +60,13 @@ function rgbDist(r1, g1, b1,   r2, g2, b2)
 }
 
 
-var blackMax = 0;
-function fill4(x, y, r1, neueFarbe) {
- 
-  if (getPixel(x, y) == alteFarbe){
-     
-     markierePixel(x, y, neueFarbe);
-     
+function fill4(x, y, evalFn) {
+  if (evalFn(x, y)) {
      fill4(x, y + 1, alteFarbe, neueFarbe); // unten
      fill4(x - 1, y, alteFarbe, neueFarbe); // links
      fill4(x, y - 1, alteFarbe, neueFarbe); // oben
      fill4(x + 1, y, alteFarbe, neueFarbe); // rechts
-  
   }
-  return;
 }
 
 var dxx = {data:[-1,0,1,  -2,0,2,  -1,0,1], width:3, height:3, scale:1};
