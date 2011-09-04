@@ -60,17 +60,37 @@ function rgbDist(r1, g1, b1,   r2, g2, b2)
 }
 
 
+/* kills the stack
 function fill4(x, y, evalFn) {
   if (evalFn(x, y)) {
-     fill4(x, y + 1, alteFarbe, neueFarbe); // unten
-     fill4(x - 1, y, alteFarbe, neueFarbe); // links
-     fill4(x, y - 1, alteFarbe, neueFarbe); // oben
-     fill4(x + 1, y, alteFarbe, neueFarbe); // rechts
+     fill4(x, y + 1, evalFn); // unten
+     fill4(x - 1, y, evalFn); // links
+     fill4(x, y - 1, evalFn); // oben
+     fill4(x + 1, y, evalFn); // rechts
   }
 }
+*/
 
-var dxx = {data:[-1,0,1,  -2,0,2,  -1,0,1], width:3, height:3, scale:1};
-var dyy = {data:[-1,-2,-1,  0,0,0,  1,2,1], width:3, height:3, scale:1};
+function fill4(x, y, evalFn) {
+	var toEvaluate = [[x, y]];
+	while (toEvaluate.length != 0) {
+		var pos = toEvaluate.pop();
+		x = pos[0]; y = pos[1];
+		if (evalFn(x, y)) {
+			toEvaluate.push([x, y+1]);
+			toEvaluate.push([x, y-1]);
+			toEvaluate.push([x-1, y]);
+			toEvaluate.push([x+1, y]);
+		}
+	}
+}
+
+var dxx = {data:[-1,0,1,  
+		 -2,0,2,  
+		 -1,0,1], width:3, height:3, scale:1};
+var dyy = {data:[-1,-2,-1,  
+		  0,0,0,  
+		  1,2,1], width:3, height:3, scale:1};
   
 
 function applyKernelAlphaOnPixel(pixels, kernel, x, y)

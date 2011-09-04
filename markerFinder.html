@@ -57,46 +57,68 @@ function handleCanvasClick(evt) {
 	var x = coords.x/imgScale;
 	var y = coords.y/imgScale;
 
-	if (x >= 0 && x < imgWidth && y >= 0 && y < imgHeight)
-		points.push([x, y]);
-
-	context.beginPath();
-	context.arc(x, y, 3, 0, Math.PI*2, true); 
-	context.closePath();
-	context.fill();
-	
-	if (points.length == 2)
+	if (evt.ctrlKey || evt.button == 1)
 	{
-		var sum = 0;
-		var n = 0;
-		var w = bwPixels.width;
+		x = Math.round(x);
+		y = Math.round(y);
 
-		xiaolinWuLineIterator(points[0][0],points[0][1], points[1][0], points[1][1], function(x, y, c) { 
-			n += c; 
-			sum += c* bwPixels.data[x+w*y];
-			pixels.data[4*(x+w*y)] = (1-c) * pixels.data[4*(x+w*y)] + c * 0;
-			pixels.data[4*(x+w*y)+1] = (1-c) * pixels.data[4*(x+w*y)+1] + c * 0;
-			pixels.data[4*(x+w*y)+2] = (1-c) * pixels.data[4*(x+w*y)+2] + c * 0;
-			//pixels.data[4*(x+w*y)+3] = 255;
+		fill4(x, y, function(x, y) {
+			if (x >= 0 && x < imgWidth && y >= 0 && y < imgHeight)	{
+				if (bwPixels.data[x+imgWidth*y] == 255) {
+					return false;
+				}
+				if (bwPixels.data[x+imgWidth*y] > 160) {
+					bwPixels.data[x+imgWidth*y] = 255;
+					return true;
+				}
+			}
+			return false;
 		});
-		alert("s: " + sum + " n: " + n + " avg: " + (sum/n));
+		var grayPixels = Filters.A2RGBA(bwPixels, context);
+		context.putImageData(grayPixels, 0,0);			
+	}
+	else {
+		if (x >= 0 && x < imgWidth && y >= 0 && y < imgHeight)
+			points.push([x, y]);
 
-		/*
-		lineIterator(points[0][0],points[0][1], points[1][0], points[1][1], function(x, y) { 
-			n++; 
-			sum += bwPixels[x+w*y];
-			pixels.data[4*(x+w*y)] = 255 - pixels.data[4*(x+w*y)];
-			pixels.data[4*(x+w*y)+1] = 255 - pixels.data[4*(x+w*y)+1];
-			pixels.data[4*(x+w*y)+2] = 255 - pixels.data[4*(x+w*y)+2];
-		});
-		//*/
-		//alert("s: " + sum + " n: " + n + " " + (sum/n));
+		context.beginPath();
+		context.arc(x, y, 3, 0, Math.PI*2, true); 
+		context.closePath();
+		context.fill();
+	
+		if (points.length == 2)
+		{
+			var sum = 0;
+			var n = 0;
+			var w = bwPixels.width;
 
-		context.putImageData(pixels, 0, 0);
+			xiaolinWuLineIterator(points[0][0],points[0][1], points[1][0], points[1][1], function(x, y, c) { 
+				n += c; 
+				sum += c* bwPixels.data[x+w*y];
+				pixels.data[4*(x+w*y)] = (1-c) * pixels.data[4*(x+w*y)] + c * 0;
+				pixels.data[4*(x+w*y)+1] = (1-c) * pixels.data[4*(x+w*y)+1] + c * 0;
+				pixels.data[4*(x+w*y)+2] = (1-c) * pixels.data[4*(x+w*y)+2] + c * 0;
+				//pixels.data[4*(x+w*y)+3] = 255;
+			});
+			alert("s: " + sum + " n: " + n + " avg: " + (sum/n));
+
+			/*
+			lineIterator(points[0][0],points[0][1], points[1][0], points[1][1], function(x, y) { 
+				n++; 
+				sum += bwPixels[x+w*y];
+				pixels.data[4*(x+w*y)] = 255 - pixels.data[4*(x+w*y)];
+				pixels.data[4*(x+w*y)+1] = 255 - pixels.data[4*(x+w*y)+1];
+				pixels.data[4*(x+w*y)+2] = 255 - pixels.data[4*(x+w*y)+2];
+			});
+			//*/
+			//alert("s: " + sum + " n: " + n + " " + (sum/n));
+
+			context.putImageData(pixels, 0, 0);
 		
-		//document.getElementById('outputText').value = "convert ..\\..\\web\\" + fileName + " -virtual-pixel transparent -distort Perspective \"" + s + "\" " + fileName + "out.png";
-		//handleLoad(img);
-		points = [];
+			//document.getElementById('outputText').value = "convert ..\\..\\web\\" + fileName + " -virtual-pixel transparent -distort Perspective \"" + s + "\" " + fileName + "out.png";
+			//handleLoad(img);
+			points = [];
+		}
 	}
 }
   

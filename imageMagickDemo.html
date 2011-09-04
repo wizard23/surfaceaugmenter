@@ -1,0 +1,193 @@
+<html>
+<head>
+<style> </style>
+
+<script type="text/javascript">
+
+var myCanvas;
+
+var img;
+var imgWidth, imgHeight;
+var imgScale = 1.0;
+var fileName="";
+
+var points = [];
+
+function setup()
+{
+	document.getElementById('imageFile').addEventListener('change', handleImageSelect, false);
+	document.addEventListener('click', handleCanvasClick, false);
+
+
+
+
+
+	var holder = document.getElementById('canvas');
+
+	holder.ondragover = function () { this.className = 'hover'; return false; };
+	holder.ondragend = function () { this.className = ''; return false; };
+	holder.ondrop = function (e) {
+		this.className = '';
+		e.preventDefault();
+
+		var file = e.dataTransfer.files[0];
+		reader.onload = function (event) {
+		var reader = new FileReader();
+			alert("xx");
+			img = new Image();
+			img.onload = function() {
+				alert("xxx :)");
+				handleLoad(img);
+			};
+			img.src = event.target.result ;
+		};
+		reader.readAsDataURL(file);
+
+		return false;
+	};
+
+
+
+}
+
+
+
+
+
+
+function handleImageSelect(evt) {
+	var files = evt.target.files; // FileList object
+
+/*
+
+	var file = files[0];
+	var reader = new FileReader();
+	reader.onload = function (event) {
+		alert("dd");
+		img = new Image();
+		img.onload = function() {
+			handleLoad(img);
+		};
+		img.src = event.target.result;
+	};
+	reader.readAsDataURL(file);
+
+	return;
+*/
+	
+	img = new Image();
+	img.onload = function(){
+		handleLoad(img);
+	}
+	fileName = files[0].fileName;
+	img.src = fileName; //files[0];
+}
+
+function handleCanvasClick(evt) {
+	var canvas = document.getElementById('canvas');
+	coords = canvas.relMouseCoords(event);
+
+	var context = canvas.getContext('2d');
+	context.beginPath();
+	
+	var x = coords.x/imgScale;
+	var y = coords.y/imgScale;
+	
+	if (x >= 0 && x < imgWidth && y >= 0 && y < imgHeight)
+		points.push([x, y]);
+	
+	context.arc(x, y, 2, 0, Math.PI*2, true); 
+	context.closePath();
+	context.fill();
+	
+	if (points.length == 4)
+	{
+		s = "";
+		var mx = 0;
+		var my  = 0;
+		var i = 0;
+		for (i = 0; i < points.length; i++)
+		{
+			p = points[i];
+			mx += p[0];
+			my += p[1];
+		}
+		mx /= points.length;
+		my /= points.length;
+		
+		
+		squareS = 150;
+		refs = [[mx-squareS, my -squareS], [mx+squareS, my -squareS], [mx+squareS, my +squareS], [mx-squareS, my+squareS]]
+		
+		for (i = 0; i < points.length; i++)
+		{
+			p = points[i];
+			r = refs[i];
+			s += "" + p[0] +","+p[1] +"," + r[0] +","+r[1] + " ";
+		}
+		
+		document.getElementById('outputText').value = "convert ..\\..\\web\\" + fileName + " -virtual-pixel transparent -distort Perspective \"" + s + "\" " + fileName + "out.png";
+		handleLoad(img);
+		points = [];
+	}
+}
+  
+function handleLoad(img) {
+	var canvas = document.getElementById('canvas');
+	
+	canvas.width = img.width;
+	canvas.height = img.height;
+	imgWidth = img.width;
+	imgHeight = img.height;
+	
+	var context = canvas.getContext('2d');
+	context.drawImage(img, 0, 0, img.width, img.height);
+} 
+
+function scaleImage(scale)
+{
+	imgScale *= scale;
+	var canvas = document.getElementById('canvas');
+	canvas.style.width = "" + (imgWidth*imgScale) +"px";
+	canvas.style.height = "" + (imgHeight*imgScale) +"px";
+	// 		
+	//canvas.height = imgHeight;
+}
+
+
+function relMouseCoords(event){
+    var totalOffsetX = 0;
+    var totalOffsetY = 0;
+    var canvasX = 0;
+    var canvasY = 0;
+    var currentElement = this;
+
+    do{
+        totalOffsetX += currentElement.offsetLeft;
+        totalOffsetY += currentElement.offsetTop;
+    }
+    while(currentElement = currentElement.offsetParent)
+
+    canvasX = event.pageX - totalOffsetX;
+    canvasY = event.pageY - totalOffsetY;
+
+    return {x:canvasX, y:canvasY}
+}
+HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
+
+</script>
+
+
+</head>
+<body onload="setup()">
+<form name="controls" action="">
+	<input type="button" value="Reset" onclick="handleReset();">
+	<input type="file" value="imageFile" id="imageFile" />
+	<input type="button" value="scale/1.2" onclick="scaleImage(1/1.2);"><input type="button" value="scale*1.2" onclick="scaleImage(1.2);">
+	<input type="text" name="outputText" id="outputText" />
+</form>
+<canvas id="canvas" width="400" height="300"></canvas>
+
+	
+</body>
+</html>
