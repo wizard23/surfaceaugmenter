@@ -17,6 +17,10 @@ var imgScale = 1.0;
 var points = [];
 var pixels, bwPixels;
 
+var maskWhite = 255;
+var maskTransWB = 150;
+var maskBlack = 100;
+
 function setup()
 {
 	document.getElementById('imageFile').addEventListener('change', handleImageSelect, false);
@@ -50,7 +54,11 @@ function handleCanvasClick(evt) {
 	
 	if (!pixels) {
 		pixels = context.getImageData(0,0, canvas.width, canvas.height);
-		bwPixels = Filters.RGBA2A(pixels, context);
+		bwPixels = RGBA2A(pixels, context);
+		
+		bwPixelsSobolev = createImageDataA(canvas.width, canvas.height);
+		maskPixels = createImageDataA(canvas.width, canvas.height);
+		APixelsFill(maskPixels);
 	}
 
 	var coords = canvas.relMouseCoords(event);
@@ -62,20 +70,97 @@ function handleCanvasClick(evt) {
 		x = Math.round(x);
 		y = Math.round(y);
 
-		fill4(x, y, function(x, y) {
+		var whiteSum = 200;
+		var whiteVarsum = 0;
+		var whiteN = 1;
+		var blackSum = 100;
+		var blackVarsum = 0;
+		var blackN = 1;
+
+
+		var br = 0.0;
+		fill4(x, y, function(x, y, state) {
 			if (x >= 0 && x < imgWidth && y >= 0 && y < imgHeight)	{
-				if (bwPixels.data[x+imgWidth*y] == 255) {
+				var whiteAvg = whiteSum/whiteN;
+				var blackAvg = blackSum/blackN;
+				var whiteVar = whiteVarsum/whiteN;
+				var blackVar = blackVarsum/blackN;
+
+
+				var idx = x+imgWidth*y;
+				var idx4 = 4*idx;
+				var mask = maskPixels.data[idx];
+				
+				if (mask == maskWhite || mask == maskBlack) {
 					return false;
 				}
-				if (bwPixels.data[x+imgWidth*y] > 160) {
-					bwPixels.data[x+imgWidth*y] = 255;
-					return true;
+				var val = bwPixels.data[idx];
+
+				br += 0.03;
+				pixels.data[idx4] = br;
+				pixels.data[idx4+1] = br-255;
+				pixels.data[idx4+2] = br-512;
+
+				if (state == maskWhite)
+				{
+					if (val < blackAvg + blackVar) {
+						blackSum += val; blackVarsum += Math.abs(val-blackAvg); blackN++;
+						maskPixels.data[idx] = maskBlack;
+
+						//pixels.data[idx4] = 255;
+						//pixels.data[idx4+1] = 0;
+						//pixels.data[idx4+2] = 0;
+
+						return maskBlack;
+					}
+
+					whiteSum += val; whiteVarsum += Math.abs(val-whiteAvg); whiteN++;
+					maskPixels.data[idx] = maskWhite;
+					
+					//pixels.data[idx4] = 0;
+					//pixels.data[idx4+1] = 255;
+					//pixels.data[idx4+2] = 0;
+
+					return maskWhite;
+				}
+				else if (state == maskBlack)
+				{
+					if (val > (blackAvg + blackVar)*1.2) {
+						return false;
+					}
+					blackSum += val; blackVarsum += Math.abs(val-blackAvg); blackN++;
+					maskPixels.data[idx] = maskBlack;
+					maskPixels.data[idx] = maskBlack;
+
+					//pixels.data[idx4] = 255;
+					//pixels.data[idx4+1] = 0;
+					//pixels.data[idx4+2] = 0;
+
+					return maskBlack;
 				}
 			}
 			return false;
-		});
-		var grayPixels = Filters.A2RGBA(bwPixels, context);
-		context.putImageData(grayPixels, 0,0);			
+		}, maskWhite);
+
+
+		context.putImageData(pixels, 0,0);
+
+		applyKernelAlphaOnPixels(bwPixels, maskPixels, dxx, dyy, bwPixelsSobolev);
+
+		
+		var canvas2 = document.getElementById('canvas2');
+		canvas2.width = maskPixels.width;
+		canvas2.height = maskPixels.height;
+		var context2 = canvas2.getContext('2d');	
+		var grayPixels = A2RGBA(maskPixels, context2);
+		context2.putImageData(grayPixels, 0,0);	
+	
+		var canvas3 = document.getElementById('canvas3');
+		canvas3.width = maskPixels.width;
+		canvas3.height = maskPixels.height;
+		var context3 = canvas3.getContext('2d');	
+		var grayPixels = A2RGBA(bwPixelsSobolev, context3);
+		context3.putImageData(grayPixels, 0,0);		
 	}
 	else {
 		if (x >= 0 && x < imgWidth && y >= 0 && y < imgHeight)
@@ -107,7 +192,8 @@ function handleCanvasClick(evt) {
 				n++; 
 				sum += bwPixels[x+w*y];
 				pixels.data[4*(x+w*y)] = 255 - pixels.data[4*(x+w*y)];
-				pixels.data[4*(x+w*y)+1] = 255 - pixels.data[4*(x+w*y)+1];
+				pixels.data[4*(x+w*y)+1] = 255 - pixels.data[4*(x+w*y)+1];canvas.width = img.width;
+	canvas.height = img.height;
 				pixels.data[4*(x+w*y)+2] = 255 - pixels.data[4*(x+w*y)+2];
 			});
 			//*/
@@ -197,6 +283,8 @@ function xffdlj() {
 </form>
 
 <canvas id="canvas" width="400" height="300"></canvas>
+<canvas id="canvas2"></canvas>
+<canvas id="canvas3"></canvas>
 	
 </body>
 </html>

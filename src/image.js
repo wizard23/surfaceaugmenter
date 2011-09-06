@@ -1,3 +1,4 @@
+/*
 var Filters = {};
 
 Filters.getPixels = function(img) {
@@ -14,13 +15,24 @@ Filters.getCanvas = function(w,h) {
   return c;
 };
 
+*/
 
-Filters.RGBA2A = function(pixels, context) {
+function APixelsFill(pixels, value)
+{
+	var len = pixels.width * pixels.height;
 	var d = pixels.data;
-	var out = {};
-	var outData = out.data = [];
-	out.width = pixels.width;
-	out.height = pixels.height;
+
+	for (var i=0; i<len; i++) {
+		d[i] = value;
+	}
+	pixels.data = d;
+}
+
+
+function RGBA2A(pixels, context) {
+	var d = pixels.data;
+	var out = createImageDataA(pixels.width, pixels.height)
+	var outData = out.data;
 
 	var j = 0;
 	for (var i=0; i<d.length; i+=4) {
@@ -34,7 +46,7 @@ Filters.RGBA2A = function(pixels, context) {
 	return out;
 };
 
-Filters.A2RGBA = function(pixels, context) {
+function A2RGBA(pixels, context) {
 	var d = pixels.data;
 	var out = context.createImageData(pixels.width,pixels.height);
 	var outData = out.data;
@@ -52,35 +64,29 @@ Filters.A2RGBA = function(pixels, context) {
 	return out;
 };
 
-
-
-function rgbDist(r1, g1, b1,   r2, g2, b2)
+function createImageDataA(width, height)
 {
-	return abs(r1-r2)+abs(g1-g2)+abs(b1-b2);
+	var out = {};
+	out.data = [];
+	out.width = pixels.width;
+	out.height = pixels.height;
+	return out;
 }
 
 
-/* kills the stack
-function fill4(x, y, evalFn) {
-  if (evalFn(x, y)) {
-     fill4(x, y + 1, evalFn); // unten
-     fill4(x - 1, y, evalFn); // links
-     fill4(x, y - 1, evalFn); // oben
-     fill4(x + 1, y, evalFn); // rechts
-  }
-}
-*/
-
-function fill4(x, y, evalFn) {
-	var toEvaluate = [[x, y]];
+// dont use 0 as a state because it is equal to false
+function fill4(x, y, evalFn, state) {
+	var toEvaluate = [[x, y, state]];
+	var pos;
 	while (toEvaluate.length != 0) {
-		var pos = toEvaluate.pop();
+		pos = toEvaluate.pop();
 		x = pos[0]; y = pos[1];
-		if (evalFn(x, y)) {
-			toEvaluate.push([x, y+1]);
-			toEvaluate.push([x, y-1]);
-			toEvaluate.push([x-1, y]);
-			toEvaluate.push([x+1, y]);
+		state = evalFn(x, y, pos[2]);
+		if (state != false) {
+			toEvaluate.push([x, y+1, state]);
+			toEvaluate.push([x, y-1, state]);
+			toEvaluate.push([x-1, y, state]);
+			toEvaluate.push([x+1, y, state]);
 		}
 	}
 }
@@ -116,14 +122,18 @@ function applyKernelAlphaOnPixel(pixels, kernel, x, y)
 	return sum*kernel.scale;
 }
 
-function applyKernelAlphaOnPixels(pixels, kernelx, kernely, pixelsOut)
+function applyKernelAlphaOnPixels(pixels, mask, kernelx, kernely, pixelsOut)
 {
 	var outIndex = 0;
 	for (y = 0; y < pixels.height; y++) {
 		for (x = 0; x < pixels.width; x++) {
-			var dx = applyKernelAlphaOnPixel(pixels, kernelx, x, y);
-			var dy = applyKernelAlphaOnPixel(pixels, kernely, x, y);
-			pixelsOut.data[outIndex] = Math.sqrt(dx*dx+dy*dy);
+			if (mask.data[outIndex] > 0) {
+				var dx = applyKernelAlphaOnPixel(pixels, kernelx, x, y);
+				var dy = applyKernelAlphaOnPixel(pixels, kernely, x, y);
+				pixelsOut.data[outIndex] = Math.sqrt(dx*dx+dy*dy);
+			}
+			else
+				pixelsOut.data[outIndex] = 0;
 			outIndex++;
 		}
 	}
