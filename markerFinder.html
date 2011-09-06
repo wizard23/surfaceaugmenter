@@ -17,9 +17,9 @@ var imgScale = 1.0;
 var points = [];
 var pixels, bwPixels;
 
-var maskWhite = 255;
-var maskTransWB = 150;
-var maskBlack = 100;
+var maskInitBlack = 50;
+var maskLine = 200;
+var maskOutBlack = 100;
 
 function setup()
 {
@@ -55,8 +55,8 @@ function handleCanvasClick(evt) {
 	if (!pixels) {
 		pixels = context.getImageData(0,0, canvas.width, canvas.height);
 		bwPixels = RGBA2A(pixels, context);
-		
 		bwPixelsSobolev = createImageDataA(canvas.width, canvas.height);
+		applyKernelAlphaOnPixels(bwPixels, dxx, dyy, bwPixelsSobolev);
 		maskPixels = createImageDataA(canvas.width, canvas.height);
 		APixelsFill(maskPixels);
 	}
@@ -70,10 +70,10 @@ function handleCanvasClick(evt) {
 		x = Math.round(x);
 		y = Math.round(y);
 
-		var whiteSum = 200;
+		var whiteSum = 255;
 		var whiteVarsum = 0;
 		var whiteN = 1;
-		var blackSum = 100;
+		var blackSum = 0;
 		var blackVarsum = 0;
 		var blackN = 1;
 
@@ -91,61 +91,71 @@ function handleCanvasClick(evt) {
 				var idx4 = 4*idx;
 				var mask = maskPixels.data[idx];
 				
-				if (mask == maskWhite || mask == maskBlack) {
+				if (mask == maskInitBlack || mask == maskLine || mask == maskOutBlack) {
 					return false;
 				}
-				var val = bwPixels.data[idx];
+				var val = bwPixelsSobolev.data[idx];
 
 				br += 0.03;
 				pixels.data[idx4] = br;
 				pixels.data[idx4+1] = br-255;
 				pixels.data[idx4+2] = br-512;
 
-				if (state == maskWhite)
+				if (state == maskInitBlack)
 				{
-					if (val < blackAvg + blackVar) {
-						blackSum += val; blackVarsum += Math.abs(val-blackAvg); blackN++;
-						maskPixels.data[idx] = maskBlack;
+					if (val > (blackAvg+whiteAvg)*0.6) {
+						//blackSum += val; blackVarsum += Math.abs(val-blackAvg); blackN++;
+						whiteSum += val; whiteVarsum += Math.abs(val-whiteAvg); whiteN++;
 
-						//pixels.data[idx4] = 255;
-						//pixels.data[idx4+1] = 0;
-						//pixels.data[idx4+2] = 0;
+						maskPixels.data[idx] = maskLine;
 
-						return maskBlack;
+						pixels.data[idx4] = 255;
+						pixels.data[idx4+1] = 0;
+						pixels.data[idx4+2] = 0;
+
+						return maskLine;
 					}
 
-					whiteSum += val; whiteVarsum += Math.abs(val-whiteAvg); whiteN++;
-					maskPixels.data[idx] = maskWhite;
-					
-					//pixels.data[idx4] = 0;
-					//pixels.data[idx4+1] = 255;
-					//pixels.data[idx4+2] = 0;
-
-					return maskWhite;
-				}
-				else if (state == maskBlack)
-				{
-					if (val > (blackAvg + blackVar)*1.2) {
-						return false;
-					}
 					blackSum += val; blackVarsum += Math.abs(val-blackAvg); blackN++;
-					maskPixels.data[idx] = maskBlack;
-					maskPixels.data[idx] = maskBlack;
+					//whiteSum += val; whiteVarsum += Math.abs(val-whiteAvg); whiteN++;
+					maskPixels.data[idx] = maskInitBlack;
+					
+					pixels.data[idx4] = 0;
+					pixels.data[idx4+1] = 255;
+					pixels.data[idx4+2] = 0;
 
-					//pixels.data[idx4] = 255;
-					//pixels.data[idx4+1] = 0;
-					//pixels.data[idx4+2] = 0;
+					return maskInitBlack;
+				}
+				else if (state == maskLine)
+				{
+					if (val < (blackAvg+whiteAvg)*0.4) {
+						pixels.data[idx4] = 255;
+						pixels.data[idx4+1] = 255;
+						pixels.data[idx4+2] = 0;
 
-					return maskBlack;
+						maskPixels.data[idx] = maskOutBlack;
+						return maskOutBlack;
+					}
+					//blackSum += val; blackVarsum += Math.abs(val-blackAvg); blackN++;
+					whiteSum += val; whiteVarsum += Math.abs(val-whiteAvg); whiteN++;
+
+					maskPixels.data[idx] = maskLine;
+
+					pixels.data[idx4] = 0;
+					pixels.data[idx4+1] = 0;
+					pixels.data[idx4+2] = 255;
+
+					return maskLine;
 				}
 			}
 			return false;
-		}, maskWhite);
+		}, maskInitBlack);
 
+
+		applyMaskAlphaOnPixels(bwPixelsSobolev, maskPixels, bwPixelsSobolev)
 
 		context.putImageData(pixels, 0,0);
-
-		applyKernelAlphaOnPixels(bwPixels, maskPixels, dxx, dyy, bwPixelsSobolev);
+		
 
 		
 		var canvas2 = document.getElementById('canvas2');
