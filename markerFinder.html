@@ -5,6 +5,7 @@
 
 <script type="text/javascript" src="src/image.js"></script>
 <script type="text/javascript" src="src/helpers.js"></script>
+<script type="text/javascript" src="src/lines.js"></script>
 <script type="text/javascript" src="libs/pixastic/pixastic.core.js"></script>
 <script type="text/javascript" src="libs/pixastic/actions/histogram.js"></script>
 <script type="text/javascript">
@@ -171,6 +172,9 @@ function handleCanvasClick(evt) {
 		var context3 = canvas3.getContext('2d');	
 		var grayPixels = A2RGBA(bwPixelsSobolev, context3);
 		context3.putImageData(grayPixels, 0,0);		
+
+		var point = calculateCenterPoint(maskPixels);
+		alert("x:" + point.x + " y:" + point.y +  " n:" + point.n +  " s:" + Math.sqrt(point.n));
 	}
 	else {
 		if (x >= 0 && x < imgWidth && y >= 0 && y < imgHeight)

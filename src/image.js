@@ -203,6 +203,66 @@ function lineIterator(x0, y0, x1, y1, callback) {
 	}
 }
 
+// adapted from: http://en.wikipedia.org/wiki/Bresenham's_line_algorithm
+function lineDirectedIterator(x0, y0, x1, y1, callback) {
+	var disty = y1 - y0;
+	if (disty < 0) disty = -disty;
+	var distx = x1 - x0;
+	if (distx < 0) distx = -distx;
+
+	var steep = disty > distx;
+	var rev = false;
+	if (steep) {
+		//swap(x0, y0)
+		//swap(x1, y1)
+		var tmp = x0;
+		x0 = y0;
+		y0 = tmp;
+		tmp = x1;
+		x1 = y1;
+		y1 = tmp;
+	}
+	if (x0 > x1) {
+		rev = true;
+		//swap(x0, x1)
+		//swap(y0, y1)
+		var tmp = x0;
+		x0 = x1;
+		x1 = tmp;
+		tmp = y0;
+		y0 = y1;
+		y1 = tmp;
+	}	
+	var deltax = x1 - x0;
+	var deltay = y1 - y0;
+	if (deltay < 0) deltay = -deltay;
+	var error = deltax / 2;
+	var ystep;
+	var y = y0;
+	if (y0 < y1) ystep = 1;
+	else ystep = -1;
+
+	var pos = [];
+	for (x = x0; x <= x1; x++) {
+        	if (steep) pos.push([y,x]);
+		else pos.push([x,y]);
+         	error = error - deltay;
+         	if (error < 0) {
+             		y = y + ystep;
+             		error = error + deltax;
+		}
+	}
+	if (rev) {
+		for (var i = pos.length - 1; i >= 0; i--)
+			callback(pos[i][0], pos[i][1]);
+	}
+	else {
+		for (var i = 0; i < pos.length; i++)
+		callback(pos[i][0], pos[i][1]);
+	}	
+}
+
+
 ///////////////////////
 // adapted from: http://en.wikipedia.org/wiki/Xiaolin_Wu%27s_line_algorithm
 
