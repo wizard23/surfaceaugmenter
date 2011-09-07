@@ -251,8 +251,8 @@ function handleTestClick()
 	//var pixels = context.getImageData(110,110,120,120);
 	var pixels = context.getImageData(0,0, canvas.width, canvas.height);
 
-	var bwPixels = Filters.RGBA2A(pixels, context);
-	var bwPixelsSobolev = Filters.RGBA2A(pixels, context);
+	var bwPixels = RGBA2A(pixels, context);
+	var bwPixelsSobolev = RGBA2A(pixels, context);
 
 	
 
@@ -260,7 +260,7 @@ function handleTestClick()
 
 	applyKernelAlphaOnPixels(bwPixels, dxx, dyy, bwPixelsSobolev)
 
-	var grayPixels = Filters.A2RGBA(bwPixelsSobolev, context);
+	var grayPixels = A2RGBA(bwPixelsSobolev, context);
 	context.putImageData(grayPixels, 0,0);
 
 

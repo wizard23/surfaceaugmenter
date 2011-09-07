@@ -68,8 +68,8 @@ function createImageDataA(width, height)
 {
 	var out = {};
 	out.data = [];
-	out.width = pixels.width;
-	out.height = pixels.height;
+	out.width = width;
+	out.height = height;
 	return out;
 }
 
