@@ -64,7 +64,7 @@ function handleCanvasClick(evt) {
 		APixelsFill(maskPixels, 0);
 	}
 
-	var coords = canvas.relMouseCoords(event);
+	var coords = canvas.relMouseCoords(evt);
 	var x = coords.x/imgScale;
 	var y = coords.y/imgScale;
 
@@ -314,6 +314,13 @@ function xffdlj() {
 	<input type="file" value="imageFile" id="imageFile" />
 	<input type="button" value="scale/1.2" onclick="scaleImage(1/1.2);"><input type="button" value="scale*1.2" onclick="scaleImage(1.2);">
 	<input type="button" value="Apply Sobel Operator" onclick="handleTestClick();">
+	<input type="text" list="browsers" >
+		<datalist id="browsers" >
+		   <option> Google</option>
+		   <option> IE9</option>
+		</datalist>
+	<input>
+
 </form>
 
 <canvas id="canvas" width="400" height="300"></canvas>
