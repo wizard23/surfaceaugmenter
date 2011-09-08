@@ -2,6 +2,8 @@
 <head>
 <title>SurfaceAugmenter</title>
 <style> </style>
+<script type="text/javascript" src="libs/NumJS/NumJS.js"></script>
+<script type="text/javascript">NumJS.loader_html("libs/NumJS/")</script>
 
 <script type="text/javascript" src="src/image.js"></script>
 <script type="text/javascript" src="src/helpers.js"></script>
@@ -155,27 +157,19 @@ function handleCanvasClick(evt) {
 
 		applyMaskAlphaOnPixels(bwPixelsSobolev, maskPixels, bwPixelsSobolev)
 
-
-/*
-		var point = calculateCenterPoint(maskPixels);
-		var d = 4*Math.sqrt(point.n);
-		//alert("x:" + point.x + " y:" + point.y +  " n:" + point.n +  " s:" + Math.sqrt(point.n));
-
-		var p2 = intersectLinePoint(point, 3.1415/2, d, maskPixels, function(v) {return v == maskLine});
-		var p3 = intersectLinePoint(point, 3.1415/6 + 3.1415/2, d, maskPixels, function(v) {return v == maskLine});
-		//alert("x:" + p2.x + " y:" + p2.y);
-		drawLine2(point, p2, pixels, 255, 0, 255);
-		drawLine2(point, p3, pixels, 255, 0, 255);
-		drawLine2(p3, p2, pixels, 0, 255, 0);
-		*/
-
 		var bestGroup = findLineCandidates(pixels, maskPixels, bwPixelsSobolev);
 		for (var i = 0; i < bestGroup.length; i++) {
-			drawLine2(bestGroup[i].p1, bestGroup[i].p2, pixels, 0, 255, 0);
 			improveLine(bestGroup[i], bwPixelsSobolev, 4, 0.05);
-			drawLine2(bestGroup[i].p1, bestGroup[i].p2, pixels, 255, 0, 0);
 		}
-		for (var i = 0; i < bestGroup.length; i++) {
+
+		for (var i = 0; i < bestGroup.length-2; i++) {
+			var x1 = intersectLines(bestGroup[i], bestGroup[i+1]);
+			var x2 = intersectLines(bestGroup[i+2], bestGroup[(i+3)%bestGroup.length]);
+			drawLine2(x1, x2, pixels, 0, 0, 255);
+		}
+
+		for (var i = 0; i < bestGroup.length; i++) {		
+			drawLine2(bestGroup[i].p1, bestGroup[i].p2, pixels, 0, 255, 0);
 			drawLine2A(bestGroup[i].p1, bestGroup[i].p2, bwPixelsSobolev, 0);
 		}
 

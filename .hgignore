@@ -6,3 +6,4 @@ syntax: glob
 *.Jpg
 *.png
 *.PNG
+*.git*

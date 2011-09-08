@@ -1,0 +1,188 @@
+
+NumJS -- A JavaScript library for numerical computing
+=====================================================
+
+       *** This library is work in progress ***
+
+This library provides:
+
+    - classes and functions for doing computations with
+        * Real and Complex Numbers
+        * Real and Complex Matrices
+        * Permutation Matrices
+
+    - linear decompositons and linear solvers:
+        * LU and PLU decomposition
+        * QR decomposition [TBD]
+        * singular value decomposition [TBD]
+        * linear least-squares fitter [TBD]
+
+    - special functions:
+        * B-spline basis functions [TBD]
+        * Gauss error function [TBD]
+        * Lambert W-functions [TBD]
+
+    - polynomials:
+        * evaluating polynomials [TBD]
+        * numerical polynomial solver [TBD]
+
+The items marked as [TBD] aren't implemented yet. Feel free to implement
+them (and/or other stuff) and send my your pull requests.
+
+
+Real and Complex Numbers
+------------------------
+
+JavaScript does not support operator overloading. So in all arithmetric that
+might involve objects other then real numbers must be performed via the
+following NumJS function:
+
+	NumJS.ADD(x, y)        .... x + y
+	NumJS.SUB(x, y)        .... x - y
+	NumJS.MUL(x, y)        .... x * y
+	NumJS.DOT(x, y)        .... x . y
+	NumJS.DIV(x, y)        .... x / y
+	NumJS.SOLVE(x, y)      .... x \ y
+	NumJS.POW(x, y)        .... x ^ y
+
+	NumJS.INV(x)           .... 1/x
+	NumJS.NEG(x)           .... -x
+	NumJS.ABS(x)           .... abs(x)
+	NumJS.NORM(x)          .... norm(x)  (euclidean norm)
+	NumJS.ARG(x)           .... arg(x)
+	NumJS.CONJ(x)          .... conjugate(x)
+	NumJS.TRANSP(x)        .... transpose(x)
+	NumJS.EXP(x)           .... e^x
+	NumJS.LOG(x)           .... log(x)
+	NumJS.DET(x)           .... det(x)
+	NumJS.RE(x)            .... real_part(x)
+	NumJS.IM(x)            .... imaginary_part(x)
+
+	NumJS.EQ(x, y)         .... x == y
+	NumJS.EQ_ABS(x, y, d)  .... x == y  (with max abs error d)
+	NumJS.EQ_REL(x, y, d)  .... x == y  (with max rel error d)
+
+Note that not all objects support all operations. Whenever an operation
+is performed on objects that do not support it, a "NumJS.* type error"
+exception is thrown.
+
+The script "opmap.html" generates a table showing the allowed operand
+types for each operation.
+
+For real numbers the native JavaScript number type is used:
+
+	var x = 1.2345;
+
+Complex numbers can be created using the NumJS.C(re, im) helper function:
+
+	var z = NumJS.C(1, 1);
+
+or in polar coordinates using the NumJS.P(abs, arg) helper function:
+
+	var z = NumJS.C(Math.PI/4, Math.sqrt(2));
+
+Complex numbers have a .toString() method that is automatically used by
+the interpreter to convert a complex number to a string when needed.
+
+
+Matrices
+--------
+
+Matrices can be created using one of the following three functions:
+
+	var realMatrix3x3    = NumJS.RM(3, 3);
+	var complexMatrix3x3 = NumJS.CM(3, 3);
+	var permutMatrix3x3  = NumJS.PM(3);
+
+Real and complex matrices are initialized to all-zeros and can be filled
+using the .set(row, col, value) method. Note that row and column indexes
+start with 0.
+
+Permutation Matrices are initialized to the identity matrix and can be
+modified using the .pivot_col(c1, c2) and .pivot_row(r1, r2) methods,
+that pivot the two specified rows or columns.
+
+Alternatively real and complex matrices can be initialized using their
+constructors by passing and additional array with the initialization
+data in row-major order:
+
+	var realFlipMatrix3x3 = NumJS.RM(3, 3, [
+		0, 0, 1,
+		0, 1, 0,
+		1, 0, 0
+	]);
+
+Permutation matrices can also be created with initalization data. In this
+case the array must contain the row-number of each '1' per column:
+
+	var permutFlipMatrix3x3 = NumJS.PM(3, [2, 1, 0]);
+
+There are no special vector classes. So vectors must simply be created as
+Nx1 matrices.
+
+Matrix-Matrix and Matrix-Scalar operations can be performed using the
+uppercase NumJS.* metioned above and work as one would expect it. E.g.:
+
+	var A = NumJS.RM(2, 2, [1, 2, 3, 4]);
+
+	var B_re = NumJS.RM(2, 2, [5, 6, 7, 8]);
+	var B_im = NumJS.RM(2, 2, [9, 0, 1, 2]);
+	var B = NumJS.ADD(B_re, NumJS.MUL(B_im, NumJS.C(0,1)));
+
+	var Z = NumJS.MUL(A, B);
+
+Individal matrix elements can be accessed using the .get(row, col) method.
+
+Note that also permutation matrices provide a .get(row, col) method, but
+lack support of a .set(row, col, value) method.
+
+A copy of a matrix can be created using the .copy() method. This method
+converts permutation matrices into real matrices. If this is not the desired
+behavior, use the .clone() method instead.
+
+The dimension of a Matrix is stored in its .rows and .cols properties.
+A permutation matrix has an additional .sign property that holds the
+sign of the permutation.
+
+Matrices also have a .toString() method that is automatically used by
+the interpreter to convert a matrix object to a string when needed.
+
+
+PA = LU factorization and solver
+--------------------------------
+
+Each Matrix object provides the functions .LU() and .PLU() that perform
+an LU factorization and return a PLU object when the factorization was
+successful and null if the Matrix can't be factorized.
+
+The result of a factorization is cached. So successive callc to .LU()
+or .PLU() do not introduce any significant performance problem.
+
+The .LU() method performs LU factorization without pivoting and .PLU()
+performs factorization with pivoting. In most cases factorization with
+pivoting is prefered over factorization without pivoting.
+
+The PLU object stores the factorization in the properties .P, .L and .U
+with .P beeing a permutation matrix object and .L and .U beeing real
+matrices if the factorized matrix was real and complex matrices otherwise.
+
+Per definition .L is a lower triangular matrix with all ones on the main
+diagonal and .U is an upper triangular matrix.
+
+The PLU.solve(Y) method solves a linear system using the factorization:
+
+	// solve A*X = Y for X:
+	var A = NumJS.CM(n, n, [ ... ]);
+	var Y = NumJS.CM(n, k, [ ... ]);
+	var X = A.PLU().solve(Y);
+
+This is actually identical to using the NumJS.SOLVE() operator:
+
+	// solve A*X = Y for X:
+	var X = NumJS.SOLVE(A, Y);
+
+The PLU.det() method calculates the matrix determinant using the
+factorization (product along the diagonal of U times sign of P). The
+NumJS.DET(M) operator is using PLU.det() behind the scenes to
+calculate a matrix determinant.
+

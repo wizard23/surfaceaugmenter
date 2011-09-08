@@ -24,6 +24,31 @@ function calculateCenterPoint(mask) {
 
 function intersectLines(l1, l2) {
 	// a*d1 = (p2-p1)+ b*d2
+
+	// a*d1x = (p2.x-p1.x) + b*d2x;
+	// a*d1y = (p2.y-p1.y) + b*d2y
+
+	//  a = ((p2.x-p1.x) + b*d2x)/d1x;
+	//  b = ((p2.x-p1.x) + b*d2x)/d1x;
+
+	var dx1 = l1.p1.x - l1.p2.x;
+	var dy1 = l1.p1.y - l1.p2.y;
+
+	var dx2 = l2.p1.x - l2.p2.x;
+	var dy2 = l2.p1.y - l2.p2.y;
+
+	var A = NumJS.RM(2, 2, [
+		dx1, -dx2,
+		dy1, -dy2
+	]);
+
+	var Y = NumJS.RM(2, 1, [l2.p1.x-l1.p1.x, l2.p1.y-l1.p1.y]);
+	var X = NumJS.SOLVE(A, Y);
+	
+	var x = l1.p1.x + X.get(0,0) * dx1;
+	var y = l1.p1.y + X.get(0,0) * dy1;
+
+	return {x:x, y:y};
 }
 
 function normalizeLine(line)
