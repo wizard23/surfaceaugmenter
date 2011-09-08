@@ -127,15 +127,17 @@ function drawLine2(p1, p2, pixels, r, g, b) {
 
 function drawLine(x1, y1, x2, y2, pixels, r, g, b) {
 	var w = pixels.width;
+	var h = pixels.height;
 
 	xiaolinWuLineIterator(x1, y1, x2, y2, function(x, y, c) { 
-			//if (x >= 0 && y >= 0 && 
-				var idx = 4*(x+w*y);
-				pixels.data[idx] = (1-c) * pixels.data[idx] + c * r;
-				pixels.data[idx+1] = (1-c) * pixels.data[idx+1] + c * g;
-				pixels.data[idx+2] = (1-c) * pixels.data[idx+2] + c *  b;
-				//pixels.data[4*(x+w*y)+3] = 255;
-			});
+		if (x >= 0 && y >= 0 && x < w && y < h) {
+			var idx = 4*(x+w*y);
+			pixels.data[idx] = (1-c) * pixels.data[idx] + c * r;
+			pixels.data[idx+1] = (1-c) * pixels.data[idx+1] + c * g;
+			pixels.data[idx+2] = (1-c) * pixels.data[idx+2] + c *  b;
+			//pixels.data[idx+3] = 255;
+		}
+	});
 
 }
 
@@ -145,10 +147,14 @@ function drawLine2A(p1, p2, pixels, v) {
 
 function drawLineA(x1, y1, x2, y2, pixels, v) {
 	var w = pixels.width;
+	var h = pixels.height;
 
 	xiaolinWuLineIterator(x1, y1, x2, y2, function(x, y, c) { 
-				pixels.data[(x+w*y)] = (1-c) * pixels.data[4*(x+w*y)] + c * v;
-			});
+		if (x >= 0 && y >= 0 && x < w && y < h) {
+				var idx = (x+w*y);
+				pixels.data[idx] = (1-c) * pixels.data[idx] + c * v;
+		}
+	});
 }
 
 function averageLine2A(p1, p2, pixels) {
