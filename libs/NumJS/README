@@ -30,6 +30,29 @@ The items marked as [TBD] aren't implemented yet. Feel free to implement
 them (and/or other stuff) and send my your pull requests.
 
 
+A warning about numerical computing with JavaScript
+---------------------------------------------------
+
+Most JavaScript implementations store numbers as single precision (32bit)
+floating point values, or worse. So the possible applications for JavaScript
+in the world of numerical computing is in fact very limited and tasks like
+calculating the determinant of a large matrix are very unstable.
+
+However, there are applications where the numerical errors of single precision
+floating point arithmetic are within acceptable margins and an implementation
+in JavaScript might be desireable. But as the numerical error in applications
+such as e.g. numerical integration of boundary value problems can become huge,
+you should always make sure that you understand how to estimate the numerical
+errors in the calculation you want to perform before you implement it.
+
+This is of course true for all numerical computing environments, but with
+single precision floating point values you e.g. see problems in solving 10x10
+linear systems that you usually wouldn't see in 100x100 systems when performing
+the same calculations using  double precision floats.
+
+You have been warned. Happy Hacking.
+
+
 Real and Complex Numbers
 ------------------------
 
@@ -57,10 +80,11 @@ following NumJS function:
 	NumJS.DET(x)           .... det(x)
 	NumJS.RE(x)            .... real_part(x)
 	NumJS.IM(x)            .... imaginary_part(x)
+	NumJS.ROUND(x, N)      .... round(x)  (to N decimals)
 
 	NumJS.EQ(x, y)         .... x == y
-	NumJS.EQ_ABS(x, y, d)  .... x == y  (with max abs error d)
-	NumJS.EQ_REL(x, y, d)  .... x == y  (with max rel error d)
+	NumJS.EQ_ABS(x, y, T)  .... x == y  (with max abs error T)
+	NumJS.EQ_REL(x, y, T)  .... x == y  (with max rel error T)
 
 Note that not all objects support all operations. Whenever an operation
 is performed on objects that do not support it, a "NumJS.* type error"
@@ -82,17 +106,18 @@ or in polar coordinates using the NumJS.P(abs, arg) helper function:
 	var z = NumJS.C(Math.PI/4, Math.sqrt(2));
 
 Complex numbers have a .toString() method that is automatically used by
-the interpreter to convert a complex number to a string when needed.
+the interpreter to convert a complex number to a string when needed. They
+also have .toFixed() and a .toPrecision() methods that are compatible with
+the generic JavaScript .toFixed() and .toPrecision() number methods.
 
 
 Matrices
 --------
 
-Matrices can be created using one of the following three functions:
+Matrices can be created using one of the following two functions:
 
-	var realMatrix3x3    = NumJS.RM(3, 3);
-	var complexMatrix3x3 = NumJS.CM(3, 3);
-	var permutMatrix3x3  = NumJS.PM(3);
+	var matrix3x3 = NumJS.MAT(3, 3);
+	var permut3x3 = NumJS.PMAT(3);
 
 Real and complex matrices are initialized to all-zeros and can be filled
 using the .set(row, col, value) method. Note that row and column indexes
@@ -106,7 +131,7 @@ Alternatively real and complex matrices can be initialized using their
 constructors by passing and additional array with the initialization
 data in row-major order:
 
-	var realFlipMatrix3x3 = NumJS.RM(3, 3, [
+	var matrixFlip3x3 = NumJS.MAT(3, 3, [
 		0, 0, 1,
 		0, 1, 0,
 		1, 0, 0
@@ -115,18 +140,18 @@ data in row-major order:
 Permutation matrices can also be created with initalization data. In this
 case the array must contain the row-number of each '1' per column:
 
-	var permutFlipMatrix3x3 = NumJS.PM(3, [2, 1, 0]);
+	var permutFlip3x3 = NumJS.PMAT(3, [2, 1, 0]);
 
-There are no special vector classes. So vectors must simply be created as
+There is no special vector class. So vectors must simply be created as
 Nx1 matrices.
 
 Matrix-Matrix and Matrix-Scalar operations can be performed using the
 uppercase NumJS.* metioned above and work as one would expect it. E.g.:
 
-	var A = NumJS.RM(2, 2, [1, 2, 3, 4]);
+	var A = NumJS.MAT(2, 2, [1, 2, 3, 4]);
 
-	var B_re = NumJS.RM(2, 2, [5, 6, 7, 8]);
-	var B_im = NumJS.RM(2, 2, [9, 0, 1, 2]);
+	var B_re = NumJS.MAT(2, 2, [5, 6, 7, 8]);
+	var B_im = NumJS.MAT(2, 2, [9, 0, 1, 2]);
 	var B = NumJS.ADD(B_re, NumJS.MUL(B_im, NumJS.C(0,1)));
 
 	var Z = NumJS.MUL(A, B);
@@ -140,12 +165,26 @@ A copy of a matrix can be created using the .copy() method. This method
 converts permutation matrices into real matrices. If this is not the desired
 behavior, use the .clone() method instead.
 
+A row-major array of matrix block can be generated using the Matrix
+.cut(row, col, nRows, nCols) method. A block of a Matrix can be written
+using the Matrix .paste(row, col, nRows, nCols) mehthod. The methods
+.cut_cm() and .paste_cm() do the same for column-major arrays. This
+functions can be used to easily rearange matrices or initialize them
+row- or column-wise:
+
+	var A = NumJS.MAT(3, 3);
+	A.paste(0, 0, 1, 3, [ 1, 2, 3 ]);
+	A.paste(1, 0, 1, 3, [ 4, 5, 6 ]);
+	A.paste(2, 0, 1, 3, [ 7, 8, 9 ]);
+
 The dimension of a Matrix is stored in its .rows and .cols properties.
 A permutation matrix has an additional .sign property that holds the
 sign of the permutation.
 
 Matrices also have a .toString() method that is automatically used by
-the interpreter to convert a matrix object to a string when needed.
+the interpreter to convert a complex number to a string when needed. They
+also have .toFixed() and a .toPrecision() methods that are compatible with
+the generic JavaScript .toFixed() and .toPrecision() number methods.
 
 
 PA = LU factorization and solver
@@ -172,8 +211,8 @@ diagonal and .U is an upper triangular matrix.
 The PLU.solve(Y) method solves a linear system using the factorization:
 
 	// solve A*X = Y for X:
-	var A = NumJS.CM(n, n, [ ... ]);
-	var Y = NumJS.CM(n, k, [ ... ]);
+	var A = NumJS.MAT(n, n, [ ... ]);
+	var Y = NumJS.MAT(n, k, [ ... ]);
 	var X = A.PLU().solve(Y);
 
 This is actually identical to using the NumJS.SOLVE() operator:

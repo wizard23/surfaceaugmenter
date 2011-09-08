@@ -35,12 +35,7 @@ NumJS.GenericMatrix.prototype =
 		throw "NumJS.Matrix called virtual function from NumJS.GenericMatrix";
 	},
 	copy: function() {
-		var result;
-		if (this instanceof NumJS.CMatrix) {
-			result = new NumJS.CMatrix(this.rows, this.cols);
-		} else {
-			result = new NumJS.RMatrix(this.rows, this.cols);
-		}
+		var result = new NumJS.Matrix(this.rows, this.cols);
 		for (var i=0; i < this.rows; i++)
 		for (var j=0; j < this.cols; j++)
 			result.set(i, j, this.get(i, j));
@@ -49,16 +44,36 @@ NumJS.GenericMatrix.prototype =
 	clone: function() {
 		return this.copy();
 	},
+	cut: function(i, j, rows, cols) {
+		var result = new Array();
+		for (var y=0; y < rows; y++)
+		for (var x=0; x < cols; x++)
+			result.push(this.get(i+y, j+x));
+		return result;
+	},
+	cut_cm: function(i, j, rows, cols) {
+		var result = new Array();
+		for (var x=0; x < cols; x++)
+		for (var y=0; y < rows; y++)
+			result.push(this.get(i+y, j+x));
+		return result;
+	},
+	paste: function(i, j, rows, cols, data) {
+		for (var y=0; y < rows; y++)
+		for (var x=0; x < cols; x++)
+			this.set(i+y, j+x, data.shift());
+	},
+	paste_cm: function(i, j, rows, cols, data) {
+		for (var x=0; x < cols; x++)
+		for (var y=0; y < rows; y++)
+			this.set(i+y, j+x, data.shift());
+	},
 	op_add: function(a, b) {
 		if ((a instanceof NumJS.GenericMatrix) && (b instanceof NumJS.GenericMatrix))
 		{
-			var result;
 			if (a.rows != b.rows || a.cols != b.cols)
 				throw "NumJS.Matrix dimension mismatch";
-			if ((a instanceof NumJS.CMatrix) || (b instanceof NumJS.CMatrix))
-				result = new NumJS.CMatrix(a.rows, a.cols);
-			else
-				result = new NumJS.RMatrix(a.rows, a.cols);
+			var result = new NumJS.Matrix(a.rows, a.cols);
 			for (var i=0; i < a.rows; i++)
 			for (var j=0; j < a.cols; j++)
 				result.set(i, j, NumJS.ADD(a.get(i, j), b.get(i, j)));
@@ -71,13 +86,9 @@ NumJS.GenericMatrix.prototype =
 	op_sub: function(a, b) {
 		if ((a instanceof NumJS.GenericMatrix) && (b instanceof NumJS.GenericMatrix))
 		{
-			var result;
 			if (a.rows != b.rows || a.cols != b.cols)
 				throw "NumJS.Matrix dimension mismatch";
-			if ((a instanceof NumJS.CMatrix) || (b instanceof NumJS.CMatrix))
-				result = new NumJS.CMatrix(a.rows, a.cols);
-			else
-				result = new NumJS.RMatrix(a.rows, a.cols);
+			var result = new NumJS.Matrix(a.rows, a.cols);
 			for (var i=0; i < a.rows; i++)
 			for (var j=0; j < a.cols; j++)
 				result.set(i, j, NumJS.SUB(a.get(i, j), b.get(i, j)));
@@ -92,13 +103,9 @@ NumJS.GenericMatrix.prototype =
 		var bIsMatrix = b instanceof NumJS.GenericMatrix;
 		if (aIsMatrix && bIsMatrix)
 		{
-			var result;
 			if (a.cols != b.rows)
 				throw "NumJS.Matrix dimension mismatch";
-			if ((a instanceof NumJS.CMatrix) || (b instanceof NumJS.CMatrix))
-				result = new NumJS.CMatrix(a.rows, b.cols);
-			else
-				result = new NumJS.RMatrix(a.rows, b.cols);
+			var result = new NumJS.Matrix(a.rows, b.cols);
 			for (var i=0; i < a.rows; i++)
 			for (var j=0; j < b.cols; j++)
 			{
@@ -113,11 +120,7 @@ NumJS.GenericMatrix.prototype =
 		var bIsScalar = typeof(b) == "number" || b instanceof NumJS.Cmplx;
 		if (aIsMatrix && bIsScalar)
 		{
-			var result;
-			if ((a instanceof NumJS.CMatrix) || (b instanceof NumJS.Cmplx))
-				result = new NumJS.CMatrix(a.rows, a.cols);
-			else
-				result = new NumJS.RMatrix(a.rows, a.cols);
+			var result = new NumJS.Matrix(a.rows, a.cols);
 			for (var i=0; i < a.rows; i++)
 			for (var j=0; j < a.cols; j++)
 				result.set(i, j, NumJS.MUL(a.get(i, j), b));
@@ -125,11 +128,7 @@ NumJS.GenericMatrix.prototype =
 		}
 		if (aIsScalar && bIsMatrix)
 		{
-			var result;
-			if ((b instanceof NumJS.CMatrix) || (a instanceof NumJS.Cmplx))
-				result = new NumJS.CMatrix(b.rows, b.cols);
-			else
-				result = new NumJS.RMatrix(b.rows, b.cols);
+			var result = new NumJS.Matrix(b.rows, b.cols);
 			for (var i=0; i < b.rows; i++)
 			for (var j=0; j < b.cols; j++)
 				result.set(i, j, NumJS.MUL(b.get(i, j), a));
@@ -159,11 +158,7 @@ NumJS.GenericMatrix.prototype =
 		var bIsScalar = typeof(b) == "number" || b instanceof NumJS.Cmplx;
 		if (aIsMatrix && bIsScalar)
 		{
-			var result;
-			if ((a instanceof NumJS.CMatrix) || (b instanceof NumJS.CMatrix))
-				result = new NumJS.CMatrix(a.rows, a.cols);
-			else
-				result = new NumJS.RMatrix(a.rows, a.cols);
+			var result = new NumJS.Matrix(a.rows, a.cols);
 			for (var i=0; i < a.rows; i++)
 			for (var j=0; j < a.cols; j++)
 				result.set(i, j, NumJS.DIV(a.get(i, j), b));
@@ -194,15 +189,11 @@ NumJS.GenericMatrix.prototype =
 		var bIsScalar = typeof(b) == "number" || b instanceof NumJS.Cmplx;
 		if (aIsMatrix && bIsScalar)
 		{
-			var result;
 			if (a.cols != a.rows)
 				throw "NumJS.Matrix dimension mismatch";
 			if (NumJS.IM(b) != 0 || NumJS.RE(b) != Math.round(NumJS.RE(b)) || NumJS.RE(b) < 0)
 				throw "NumJS.Matrix negative, fractional or complex matrix power";
-			if ((a instanceof NumJS.CMatrix) || (b instanceof NumJS.CMatrix))
-				result = new NumJS.CMatrix(a.rows, a.cols);
-			else
-				result = new NumJS.RMatrix(a.rows, a.cols);
+			var result = new NumJS.Matrix(a.rows, a.cols);
 			for (var i=0; i < a.rows; i++)
 				result.set(i, i, 1);
 			for (var i=0; i < NumJS.RE(b); i++)
@@ -214,97 +205,53 @@ NumJS.GenericMatrix.prototype =
 		throw "NumJS.Matrix type error";
 	},
 	op_neg: function(a) {
-		if (a instanceof NumJS.GenericMatrix)
-		{
-			var result;
-			if (a instanceof NumJS.CMatrix)
-				result = new NumJS.CMatrix(a.rows, a.cols);
-			else
-				result = new NumJS.RMatrix(a.rows, a.cols);
-			for (var i=0; i < a.rows; i++)
-			for (var j=0; j < a.cols; j++)
-				result.set(i, j, NumJS.NEG(a.get(j, i)));
-			return result;
-		}
-		throw "NumJS.Matrix type error";
+		var result = new NumJS.Matrix(a.rows, a.cols);
+		for (var i=0; i < a.rows; i++)
+		for (var j=0; j < a.cols; j++)
+			result.set(i, j, NumJS.NEG(a.get(j, i)));
+		return result;
 	},
 	op_abs: function(a) {
-		if (a instanceof NumJS.GenericMatrix)
-		{
-			var result;
-			if (a instanceof NumJS.CMatrix)
-				result = new NumJS.CMatrix(a.rows, a.cols);
-			else
-				result = new NumJS.RMatrix(a.rows, a.cols);
-			for (var i=0; i < a.rows; i++)
-			for (var j=0; j < a.cols; j++)
-				result.set(i, j, NumJS.ABS(a.get(j, i)));
-			return result;
-		}
-		throw "NumJS.Matrix type error";
+		var result = new NumJS.Matrix(a.rows, a.cols);
+		for (var i=0; i < a.rows; i++)
+		for (var j=0; j < a.cols; j++)
+			result.set(i, j, NumJS.ABS(a.get(j, i)));
+		return result;
 	},
 	op_norm: function(a) {
-		if (a instanceof NumJS.GenericMatrix)
-		{
-			var norm2 = 0;
-			if (a.cols != 1 && a.rows != 1)
-				throw "NumJS.Matrix dimension mismatch";
-			for (var i=0; i < a.rows; i++)
-			for (var j=0; j < a.cols; j++) {
-				var v = a.get(j, i);
-				if (NumJS.IM(v) != 0)
-					throw "NumJS.Matrix type error";
-				v = NumJS.RE(v);
-				norm2 += v*v;
-			}
-			return Math.sqrt(norm2);
+		var norm2 = 0;
+		if (a.cols != 1 && a.rows != 1)
+			throw "NumJS.Matrix dimension mismatch";
+		for (var i=0; i < a.rows; i++)
+		for (var j=0; j < a.cols; j++) {
+			var v = a.get(j, i);
+			if (NumJS.IM(v) != 0)
+				throw "NumJS.Matrix type error";
+			v = NumJS.RE(v);
+			norm2 += v*v;
 		}
-		throw "NumJS.Matrix type error";
+		return Math.sqrt(norm2);
 	},
 	op_arg: function(a) {
-		if (a instanceof NumJS.GenericMatrix)
-		{
-			var result;
-			if (a instanceof NumJS.CMatrix)
-				result = new NumJS.CMatrix(a.rows, a.cols);
-			else
-				result = new NumJS.RMatrix(a.rows, a.cols);
-			for (var i=0; i < a.rows; i++)
-			for (var j=0; j < a.cols; j++)
-				result.set(i, j, NumJS.ARG(a.get(j, i)));
-			return result;
-		}
-		throw "NumJS.Matrix type error";
+		var result = new NumJS.Matrix(a.rows, a.cols);
+		for (var i=0; i < a.rows; i++)
+		for (var j=0; j < a.cols; j++)
+			result.set(i, j, NumJS.ARG(a.get(j, i)));
+		return result;
 	},
 	op_conj: function(a) {
-		if (a instanceof NumJS.GenericMatrix)
-		{
-			var result;
-			if (a instanceof NumJS.CMatrix)
-				result = new NumJS.CMatrix(a.rows, a.cols);
-			else
-				result = new NumJS.RMatrix(a.rows, a.cols);
-			for (var i=0; i < a.rows; i++)
-			for (var j=0; j < a.cols; j++)
-				result.set(i, j, NumJS.CONJ(a.get(j, i)));
-			return result;
-		}
-		throw "NumJS.Matrix type error";
+		var result = new NumJS.Matrix(a.rows, a.cols);
+		for (var i=0; i < a.rows; i++)
+		for (var j=0; j < a.cols; j++)
+			result.set(i, j, NumJS.CONJ(a.get(j, i)));
+		return result;
 	},
 	op_transp: function(a) {
-		if (a instanceof NumJS.GenericMatrix)
-		{
-			var result;
-			if (a instanceof NumJS.CMatrix)
-				result = new NumJS.CMatrix(a.rows, a.cols);
-			else
-				result = new NumJS.RMatrix(a.rows, a.cols);
-			for (var i=0; i < a.rows; i++)
-			for (var j=0; j < a.cols; j++)
-				result.set(i, j, a.get(j, i));
-			return result;
-		}
-		throw "NumJS.Matrix type error";
+		var result = new NumJS.Matrix(a.rows, a.cols);
+		for (var i=0; i < a.rows; i++)
+		for (var j=0; j < a.cols; j++)
+			result.set(i, j, a.get(j, i));
+		return result;
 	},
 	op_det: function(a) {
 		var PLU = a.PLU();
@@ -313,34 +260,25 @@ NumJS.GenericMatrix.prototype =
 		return PLU.det();
 	},
 	op_re: function(a) {
-		if (a instanceof NumJS.GenericMatrix)
-		{
-			var result;
-			if (a instanceof NumJS.CMatrix)
-				result = new NumJS.CMatrix(a.rows, a.cols);
-			else
-				result = new NumJS.RMatrix(a.rows, a.cols);
-			for (var i=0; i < a.rows; i++)
-			for (var j=0; j < a.cols; j++)
-				result.set(i, j, NumJS.RE(a.get(j, i)));
-			return result;
-		}
-		throw "NumJS.Matrix type error";
+		var result = new NumJS.Matrix(a.rows, a.cols);
+		for (var i=0; i < a.rows; i++)
+		for (var j=0; j < a.cols; j++)
+			result.set(i, j, NumJS.RE(a.get(j, i)));
+		return result;
 	},
 	op_im: function(a) {
-		if (a instanceof NumJS.GenericMatrix)
-		{
-			var result;
-			if (a instanceof NumJS.CMatrix)
-				result = new NumJS.CMatrix(a.rows, a.cols);
-			else
-				result = new NumJS.RMatrix(a.rows, a.cols);
-			for (var i=0; i < a.rows; i++)
-			for (var j=0; j < a.cols; j++)
-				result.set(i, j, NumJS.IM(a.get(j, i)));
-			return result;
-		}
-		throw "NumJS.Matrix type error";
+		var result = new NumJS.Matrix(a.rows, a.cols);
+		for (var i=0; i < a.rows; i++)
+		for (var j=0; j < a.cols; j++)
+			result.set(i, j, NumJS.IM(a.get(j, i)));
+		return result;
+	},
+	op_round: function(a, n) {
+		var result = new NumJS.Matrix(a.rows, a.cols);
+		for (var i=0; i < a.rows; i++)
+		for (var j=0; j < a.cols; j++)
+			result.set(i, j, NumJS.ROUND(a.get(j, i), n));
+		return result;
 	},
 	op_eq: function(a, b) {
 		if ((a instanceof NumJS.GenericMatrix) && (b instanceof NumJS.GenericMatrix))
@@ -387,29 +325,41 @@ NumJS.GenericMatrix.prototype =
 			return b.op_eq_rel(a, b);
 		throw "NumJS.Matrix type error";
 	},
-	toString: function() {
+	toStringWorker: function(f) {
 		var str = "[ ";
 		for (var i=0; i < this.rows; i++)
 		{
 			for (var j=0; j < this.cols; j++)
-				str += (j > 0 ? ", " : "") + this.get(i, j);
+				str += (j > 0 ? ", " : "") + f(this.get(i, j));
 			if (i < this.rows-1)
 				str += "; "
 		}
 		str += " ]";
 		return str;
+	},
+	toString: function(n) {
+		return this.toStringWorker(function(v){
+			return v.toString(n);
+		});
+	},
+	toFixed: function(n) {
+		return this.toStringWorker(function(v){
+			return v.toFixed(n);
+		});
+	},
+	toPrecision: function(n) {
+		return this.toStringWorker(function(v){
+			return v.toPrecision(n);
+		});
 	}
 };
 
-// Matrix of real values
+// Just a normal Matrix
 
-NumJS.RMatrix = function(rows, cols, initdata) {
+NumJS.Matrix = function(rows, cols, initdata) {
 	this.rows = rows;
 	this.cols = cols;
-	if (typeof(Float32Array) != "undefined")
-		this.data = new Float32Array(this.rows * this.cols);
-	else
-		this.data = Array();
+	this.data = Array();
 	this.cache = new Object();
 	for (var i=0; i < this.rows; i++)
 	for (var j=0; j < this.cols; j++)
@@ -422,66 +372,20 @@ NumJS.RMatrix = function(rows, cols, initdata) {
 	}
 };
 
-NumJS.RM = function(rows, cols, initdata) {
-	return new NumJS.RMatrix(rows, cols, initdata);
+NumJS.MAT = function(rows, cols, initdata) {
+	return new NumJS.Matrix(rows, cols, initdata);
 };
 
-NumJS.RMatrix.prototype = new NumJS.GenericMatrix();
+NumJS.Matrix.prototype = new NumJS.GenericMatrix();
 
-NumJS.RMatrix.prototype.get = function(i, j) {
+NumJS.Matrix.prototype.get = function(i, j) {
 	var idx = i*this.cols + j;
 	return this.data[idx];
 };
 
-NumJS.RMatrix.prototype.set = function(i, j, v) {
+NumJS.Matrix.prototype.set = function(i, j, v) {
 	var idx = i*this.cols + j;
 	this.data[idx] = v;
-	this.cache = new Object();
-};
-
-// Matrix of complex values
-
-NumJS.CMatrix = function(rows, cols, initdata) {
-	this.rows = rows;
-	this.cols = cols;
-	if (typeof(Float32Array) != "undefined") {
-		this.re_data = new Float32Array(this.rows * this.cols);
-		this.im_data = new Float32Array(this.rows * this.cols);
-	} else {
-		this.re_data = Array();
-		this.im_data = Array();
-	}
-	this.cache = new Object();
-	for (var i=0; i < this.rows; i++)
-	for (var j=0; j < this.cols; j++) {
-		this.re_data[i*this.cols + j] = 0;
-		this.im_data[i*this.cols + j] = 0;
-	}
-	if (initdata instanceof Array) {
-		if (initdata.length != this.rows*this.cols)
-			throw "NumJS.Matrix initdata dimension mismatch";
-		for (var i = 0; i < initdata.length; i++) {
-			this.re_data[i] = NumJS.RE(initdata[i]);
-			this.im_data[i] = NumJS.IM(initdata[i]);
-		}
-	}
-};
-
-NumJS.CM = function(rows, cols, initdata) {
-	return new NumJS.CMatrix(rows, cols, initdata);
-};
-
-NumJS.CMatrix.prototype = new NumJS.GenericMatrix();
-
-NumJS.CMatrix.prototype.get = function(i, j) {
-	var idx = i*this.cols + j;
-	return NumJS.C(this.re_data[idx], this.im_data[idx]);
-};
-
-NumJS.CMatrix.prototype.set = function(i, j, v) {
-	var idx = i*this.cols + j;
-	this.re_data[idx] = NumJS.RE(v);
-	this.im_data[idx] = NumJS.IM(v);
 	this.cache = new Object();
 };
 
@@ -531,7 +435,7 @@ NumJS.PMatrix = function(dim, initdata) {
 	}
 };
 
-NumJS.PM = function(dim, initdata) {
+NumJS.PMAT = function(dim, initdata) {
 	return new NumJS.PMatrix(dim, initdata);
 };
 
@@ -603,6 +507,12 @@ NumJS.PMatrix.prototype.op_mul = function(a, b) {
 
 NumJS.PMatrix.prototype.op_det = function(a) {
 	return a.sign;
+};
+
+NumJS.PMatrix.prototype.op_round = function(a, n) {
+	if (n >= 0)
+		return a.clone();
+	return NumJS.GenericMatrix.prototype.op_round(a, n);
 };
 
 NumJS.PMatrix.prototype.op_conj = NumJS.PMatrix.prototype.op_transp;

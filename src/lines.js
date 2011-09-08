@@ -37,12 +37,12 @@ function intersectLines(l1, l2) {
 	var dx2 = l2.p1.x - l2.p2.x;
 	var dy2 = l2.p1.y - l2.p2.y;
 
-	var A = NumJS.RM(2, 2, [
+	var A = NumJS.MAT(2, 2, [
 		dx1, -dx2,
 		dy1, -dy2
 	]);
 
-	var Y = NumJS.RM(2, 1, [l2.p1.x-l1.p1.x, l2.p1.y-l1.p1.y]);
+	var Y = NumJS.MAT(2, 1, [l2.p1.x-l1.p1.x, l2.p1.y-l1.p1.y]);
 	var X = NumJS.SOLVE(A, Y);
 	
 	var x = l1.p1.x + X.get(0,0) * dx1;
@@ -175,8 +175,6 @@ function integrateLineA(x1, y1, x2, y2, pixels) {
 			sum += c * pixels.data[(x+w*y)];
 			weightSum += c;
 		}
-		//else
-		//	alert(x + " " + y + "/" + w + " " + h);
 	});
 	if (weightSum == 0) return {sum:0, avg:0, n:0};
 
@@ -195,9 +193,43 @@ function improveLine(line, bwPixelsSobolev, epsilon, thresh) {
 		steps += improve1Point(line.p2, line.p1, 0, bwPixelsSobolev, epsilon, thresh);
 		steps += improve1Point(line.p2, line.p1, Math.PI/2, bwPixelsSobolev, epsilon, thresh);
 		steps += improve1Point(line.p2, line.p1, -Math.PI/2, bwPixelsSobolev, epsilon, thresh);
+		//alert(steps);
 	} while (steps > 0);
 	
 }
+
+
+function calcParameters(pointsIn, pointsOut)
+{
+	var M = NumJS.MAT(8, 8);
+	var rhs = NumJS.MAT(8, 1);
+	var para;
+
+	for (int i = 0; i < 4; i++) {
+		// M.row(i*2 + 0) << pointsOut[i].x*pointsIn[i].x, pointsOut[i].x*pointsIn[i].y, -pointsIn[i].x, -pointsIn[i].y, -1,     0,    0,  0;
+		// M.row(i*2 + 1) << pointsOut[i].y*pointsIn[i].x, pointsOut[i].y*pointsIn[i].y,     0,    0,  0, -pointsIn[i].x, -pointsIn[i].y, -1;
+		// rhs(i*2 + 0) = -pointsOut[i].x;
+		// rhs(i*2 + 1) = -pointsOut[i].y;
+		M.paste(i*2+0,0,1,8, [pointsOut[i].x*pointsIn[i].x, pointsOut[i].x*pointsIn[i].y, -pointsIn[i].x, -pointsIn[i].y, -1,     0,    0,  0]);
+		M.paste(i*2+1,0,1,8, [pointsOut[i].y*pointsIn[i].x, pointsOut[i].y*pointsIn[i].y,     0,    0,  0, -pointsIn[i].x, -pointsIn[i].y, -1;
+		rhs.set(i*2+0,0) = -pointsOut[i].x;
+		rhs.set(i*2+1,0) = -pointsOut[i].y;
+	}
+
+	para = NumJS.SOLVE(M, rhs);
+	return para;
+}
+
+function fwdMapXY(matrix, point)
+{
+	var k = matrix.get(0,0), l = matrix.get(1,0), d = matrix.get(2,0), e = matrix.get(3,0);
+	var f = matrix.get(4,0), g = matrix.get(5,0), h = matrix.get(6,0), i = matrix.get(7,0);
+	var a = d*point.x + e*point.y + f;
+	var b = g*point.x + h*point.y + i;
+	var c = k*x + l*y + 1;
+	return {x:xtic = a / c, ytic = b / c;
+}
+
 
 function improve1Point(p1, p2, a, bwPixelsSobolev, epsilon, thresh) {
 	
