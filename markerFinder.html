@@ -129,7 +129,7 @@ function handleCanvasClick(evt) {
 				}
 				else if (state == maskLine)
 				{
-					if (val < (0.8*blackAvg+0.2*whiteAvg)) {
+					if (val < (0.7*blackAvg+0.3*whiteAvg)) {
 						//pixels.data[idx4] = 255;
 						//pixels.data[idx4+1] = 255;
 						//pixels.data[idx4+2] = 0;
@@ -172,6 +172,10 @@ function handleCanvasClick(evt) {
 		var bestGroup = findLineCandidates(pixels, maskPixels, bwPixelsSobolev);
 		for (var i = 0; i < bestGroup.length; i++) {
 			drawLine2(bestGroup[i].p1, bestGroup[i].p2, pixels, 0, 255, 0);
+			improveLine(bestGroup[i], bwPixelsSobolev, 4, 0.05);
+			drawLine2(bestGroup[i].p1, bestGroup[i].p2, pixels, 255, 0, 0);
+		}
+		for (var i = 0; i < bestGroup.length; i++) {
 			drawLine2A(bestGroup[i].p1, bestGroup[i].p2, bwPixelsSobolev, 0);
 		}
 

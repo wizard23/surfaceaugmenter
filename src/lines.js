@@ -104,9 +104,11 @@ function drawLine(x1, y1, x2, y2, pixels, r, g, b) {
 	var w = pixels.width;
 
 	xiaolinWuLineIterator(x1, y1, x2, y2, function(x, y, c) { 
-				pixels.data[4*(x+w*y)] = (1-c) * pixels.data[4*(x+w*y)] + c * r;
-				pixels.data[4*(x+w*y)+1] = (1-c) * pixels.data[4*(x+w*y)+1] + c * g;
-				pixels.data[4*(x+w*y)+2] = (1-c) * pixels.data[4*(x+w*y)+2] + c *  b;
+			//if (x >= 0 && y >= 0 && 
+				var idx = 4*(x+w*y);
+				pixels.data[idx] = (1-c) * pixels.data[idx] + c * r;
+				pixels.data[idx+1] = (1-c) * pixels.data[idx+1] + c * g;
+				pixels.data[idx+2] = (1-c) * pixels.data[idx+2] + c *  b;
 				//pixels.data[4*(x+w*y)+3] = 255;
 			});
 
@@ -125,21 +127,78 @@ function drawLineA(x1, y1, x2, y2, pixels, v) {
 }
 
 function averageLine2A(p1, p2, pixels) {
-	return averageLineA(p1.x, p1.y, p2.x, p2.y, pixels);
+	return integrateLineA(p1.x, p1.y, p2.x, p2.y, pixels).avg;
 }
 
-function averageLineA(x1, y1, x2, y2, pixels) {
-	var w = pixels.width;
+function integrateLine2A(p1, p2, pixels) {
+	return integrateLineA(p1.x, p1.y, p2.x, p2.y, pixels);
+}
+
+function integrateLineA(x1, y1, x2, y2, pixels) {
+	var w = pixels.width, h = pixels.height;
 	var sum = 0;
 	var weightSum = 0;
 
 	xiaolinWuLineIterator(x1, y1, x2, y2, function(x, y, c) { 
-				sum += c * pixels.data[(x+w*y)];
-				weightSum += c;
-			});
-	if (weightSum == 0) return 0;
+		if (x >= 0 && y >= 0 && x < w && y < h) {
+			sum += c * pixels.data[(x+w*y)];
+			weightSum += c;
+		}
+		//else
+		//	alert(x + " " + y + "/" + w + " " + h);
+	});
+	if (weightSum == 0) return {sum:0, avg:0, n:0};
 
-	return sum/weightSum;
+	return {sum:sum, avg:sum/weightSum, n:weightSum};
+}
+
+function improveLine(line, bwPixelsSobolev, epsilon, thresh) {
+	var steps;
+	
+	do {	
+		steps = 0;
+		steps += improve1Point(line.p1, line.p2, 0, bwPixelsSobolev, epsilon, thresh);
+		steps += improve1Point(line.p1, line.p2, Math.PI/2, bwPixelsSobolev, epsilon, thresh);
+		steps += improve1Point(line.p1, line.p2, -Math.PI/2, bwPixelsSobolev, epsilon, thresh);
+
+		steps += improve1Point(line.p2, line.p1, 0, bwPixelsSobolev, epsilon, thresh);
+		steps += improve1Point(line.p2, line.p1, Math.PI/2, bwPixelsSobolev, epsilon, thresh);
+		steps += improve1Point(line.p2, line.p1, -Math.PI/2, bwPixelsSobolev, epsilon, thresh);
+	} while (steps > 0);
+	
+}
+
+function improve1Point(p1, p2, a, bwPixelsSobolev, epsilon, thresh) {
+	
+	var bestIntegral = integrateLine2A(p1, p2, bwPixelsSobolev);
+	
+
+	var stepOut = false;
+	var e2 = epsilon;
+	var steps = 0;
+	do {
+		var dx = p1.x - p2.x;
+		var dy = p1.y - p2.y;
+		var d = Math.sqrt(dx*dx+dy*dy);
+		dx /= d;
+		dy /= d;
+
+		var xn = p1.x + (Math.cos(a)*dx + Math.sin(a)*dy)*e2;
+		var yn = p1.y + (-Math.sin(a)*dx + Math.cos(a)*dy)*e2;
+
+		var newIntegral = integrateLine2A({x:xn, y:yn}, p2, bwPixelsSobolev);
+		if (newIntegral.avg > bestIntegral.avg) {
+		//if (newIntegral.sum > bestIntegral.sum) { // && newIntegral.sum - bestIntegral.sum > newIntegral.avg - bestIntegral.avg) {
+			p1.x = xn;
+			p1.y = yn;
+			bestIntegral = newIntegral;
+			steps++;
+		}
+		else e2 /= 2;
+		if (e2 < thresh)
+			break;
+	} while(true);
+	return steps;
 }
 
 function findLineCandidates(pixels, maskPixels, bwPixelsSobolev) {
