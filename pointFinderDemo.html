@@ -1,0 +1,335 @@
+<html>
+<head>
+<title>SurfaceAugmenter</title>
+<style> </style>
+<script type="text/javascript" src="libs/NumJS/NumJS.js"></script>
+<script type="text/javascript">NumJS.loader_html("libs/NumJS/")</script>
+
+<script type="text/javascript" src="src/image.js"></script>
+<script type="text/javascript" src="src/helpers.js"></script>
+<script type="text/javascript" src="src/lines.js"></script>
+<script type="text/javascript" src="libs/pixastic/pixastic.core.js"></script>
+<script type="text/javascript" src="libs/pixastic/actions/histogram.js"></script>
+<script type="text/javascript">
+
+
+var img;
+var imgWidth, imgHeight;
+
+var imgScale = 1.0;
+var points = [];
+var pixels, bwPixels, maskPixels;
+
+var maskInitBlack = 50;
+var maskLine = 200;
+var maskOutBlack = 100;
+
+function setup()
+{
+	document.getElementById('imageFile').addEventListener('change', handleImageSelect, false);
+	document.getElementById('canvas').addEventListener('click', handleCanvasClick, false);
+
+	// enable dnd on canvas to load images
+	var holder = document.getElementById('canvas');
+	holder.ondragover = function () { this.className = 'hover'; return false; };
+	holder.ondragend = function () { this.className = ''; return false; };
+	holder.ondrop = function (e) {
+		this.className = '';  // what for?
+		e.preventDefault();
+		var file = e.dataTransfer.files[0];
+		asyncLoadImageFromFile(file);
+	};
+
+
+	asyncLoadImageFromURL("test1.png");
+}
+
+function handleImageSelect(evt) {
+	pixels = undefined;
+	var files = evt.target.files; // FileList object
+	var file = files[0];
+	asyncLoadImageFromFile(file);
+}
+
+function handleCanvasClick(evt) {
+	var canvas = document.getElementById('canvas');
+	var context = canvas.getContext('2d');
+	
+	if (!pixels) {
+		pixels = context.getImageData(0,0, canvas.width, canvas.height);
+		bwPixels = RGBA2A(pixels, context);
+		bwPixelsSobolev = createImageDataA(canvas.width, canvas.height);
+		applyKernelAlphaOnPixels(bwPixels, dxx, dyy, bwPixelsSobolev);
+		maskPixels = createImageDataA(canvas.width, canvas.height);
+		APixelsFill(maskPixels, 0);
+	}
+
+	var coords = canvas.relMouseCoords(event);
+	var x = coords.x/imgScale;
+	var y = coords.y/imgScale;
+
+	if (true || evt.ctrlKey || evt.button == 1)
+	{
+		x = Math.round(x);
+		y = Math.round(y);
+
+		var whiteSum = 255;
+		var whiteVarsum = 0;
+		var whiteN = 1;
+		var blackSum = 0;
+		var blackVarsum = 0;
+		var blackN = 1;
+
+
+		var br = 0.0;
+		fill4(x, y, function(x, y, state) {
+			if (x >= 0 && x < imgWidth && y >= 0 && y < imgHeight)	{
+				var whiteAvg = whiteSum/whiteN;
+				var blackAvg = blackSum/blackN;
+				var whiteVar = whiteVarsum/whiteN;
+				var blackVar = blackVarsum/blackN;
+
+
+				var idx = x+imgWidth*y;
+				var idx4 = 4*idx;
+				var mask = maskPixels.data[idx];
+				
+				if (mask == maskInitBlack || mask == maskLine || mask == maskOutBlack) {
+					return false;
+				}
+				var val = bwPixelsSobolev.data[idx];
+
+				br += 0.03;
+				//pixels.data[idx4] = br;
+				//pixels.data[idx4+1] = br-255;
+				//pixels.data[idx4+2] = br-512;
+
+				if (state == maskInitBlack)
+				{
+					if (val > (0.5*blackAvg+0.5*whiteAvg)) {
+						//blackSum += val; blackVarsum += Math.abs(val-blackAvg); blackN++;
+						whiteSum += val; whiteVarsum += Math.abs(val-whiteAvg); whiteN++;
+
+						maskPixels.data[idx] = maskLine;
+
+						//pixels.data[idx4] = 255;
+						//pixels.data[idx4+1] = 0;
+						//pixels.data[idx4+2] = 0;
+
+						return maskLine;
+					}
+
+					blackSum += val; blackVarsum += Math.abs(val-blackAvg); blackN++;
+					//whiteSum += val; whiteVarsum += Math.abs(val-whiteAvg); whiteN++;
+					maskPixels.data[idx] = maskInitBlack;
+					
+					//pixels.data[idx4] = 0;
+					//pixels.data[idx4+1] = 255;
+					//pixels.data[idx4+2] = 0;
+
+					return maskInitBlack;
+				}
+				else if (state == maskLine)
+				{
+					if (val < (0.7*blackAvg+0.3*whiteAvg)) {
+						//pixels.data[idx4] = 255;
+						//pixels.data[idx4+1] = 255;
+						//pixels.data[idx4+2] = 0;
+
+						maskPixels.data[idx] = maskOutBlack;
+						return maskOutBlack;
+					}
+					//blackSum += val; blackVarsum += Math.abs(val-blackAvg); blackN++;
+					whiteSum += val; whiteVarsum += Math.abs(val-whiteAvg); whiteN++;
+
+					maskPixels.data[idx] = maskLine;
+
+					//pixels.data[idx4] = 0;
+					//pixels.data[idx4+1] = 0;
+					//pixels.data[idx4+2] = 255;
+
+					return maskLine;
+				}
+			}
+			return false;
+		}, maskInitBlack);
+
+
+		applyMaskAlphaOnPixels(bwPixelsSobolev, maskPixels, bwPixelsSobolev)
+
+		var bestGroup = findLineCandidates(pixels, maskPixels, bwPixelsSobolev);
+		for (var i = 0; i < bestGroup.length; i++) {
+			improveLine(bestGroup[i], bwPixelsSobolev, 4, 0.05);
+		}
+
+		for (var i = 0; i < bestGroup.length-2; i++) {
+			var x1 = intersectLines(bestGroup[i], bestGroup[i+1]);
+			var x2 = intersectLines(bestGroup[i+2], bestGroup[(i+3)%bestGroup.length]);
+			drawLine2(x1, x2, pixels, 0, 0, 255);
+		}
+
+		for (var i = 0; i < bestGroup.length; i++) {		
+			drawLine2(bestGroup[i].p1, bestGroup[i].p2, pixels, 0, 255, 0);
+			//drawLine2A(bestGroup[i].p1, bestGroup[i].p2, bwPixelsSobolev, 0);
+		}
+
+
+		context.putImageData(pixels, 0,0);
+		
+
+		
+		var canvas2 = document.getElementById('canvas2');
+		canvas2.width = maskPixels.width;
+		canvas2.height = maskPixels.height;
+		var context2 = canvas2.getContext('2d');	
+		var grayPixels = A2RGBA(maskPixels, context2);
+		context2.putImageData(grayPixels, 0,0);	
+	
+		var canvas3 = document.getElementById('canvas3');
+		canvas3.width = maskPixels.width;
+		canvas3.height = maskPixels.height;
+		var context3 = canvas3.getContext('2d');	
+		var grayPixels = A2RGBA(bwPixelsSobolev, context3);
+		for (var i = 0; i < bestGroup.length; i++) {		
+			drawLine2(bestGroup[i].p1, bestGroup[i].p2, grayPixels, 255, 0, 0);
+		}
+		context3.putImageData(grayPixels, 0,0);		
+
+		
+
+
+	}
+	else {
+		if (x >= 0 && x < imgWidth && y >= 0 && y < imgHeight)
+			points.push([x, y]);
+
+		context.beginPath();
+		context.arc(x, y, 3, 0, Math.PI*2, true); 
+		context.closePath();
+		context.fill();
+	
+		if (points.length == 2)
+		{
+			var sum = 0;
+			var n = 0;
+			var w = bwPixels.width;
+
+			xiaolinWuLineIterator(points[0][0],points[0][1], points[1][0], points[1][1], function(x, y, c) { 
+				n += c; 
+				sum += c* bwPixels.data[x+w*y];
+				pixels.data[4*(x+w*y)] = (1-c) * pixels.data[4*(x+w*y)] + c * 0;
+				pixels.data[4*(x+w*y)+1] = (1-c) * pixels.data[4*(x+w*y)+1] + c * 0;
+				pixels.data[4*(x+w*y)+2] = (1-c) * pixels.data[4*(x+w*y)+2] + c * 0;
+				//pixels.data[4*(x+w*y)+3] = 255;
+			});
+			alert("s: " + sum + " n: " + n + " avg: " + (sum/n));
+
+			/*
+			lineIterator(points[0][0],points[0][1], points[1][0], points[1][1], function(x, y) { 
+				n++; 
+				sum += bwPixels[x+w*y];
+				pixels.data[4*(x+w*y)] = 255 - pixels.data[4*(x+w*y)];
+				pixels.data[4*(x+w*y)+1] = 255 - pixels.data[4*(x+w*y)+1];canvas.width = img.width;
+	canvas.height = img.height;
+				pixels.data[4*(x+w*y)+2] = 255 - pixels.data[4*(x+w*y)+2];
+			});
+			//*/
+			//alert("s: " + sum + " n: " + n + " " + (sum/n));
+
+			context.putImageData(pixels, 0, 0);
+		
+			//document.getElementById('outputText').value = "convert ..\\..\\web\\" + fileName + " -virtual-pixel transparent -distort Perspective \"" + s + "\" " + fileName + "out.png";
+			//handleLoad(img);
+			points = [];
+		}
+	}
+}
+  
+function drawImage(img) {
+	var canvas = document.getElementById('canvas');
+	
+	canvas.width = img.width;
+	canvas.height = img.height;
+	imgWidth = img.width;
+	imgHeight = img.height;
+	
+	var context = canvas.getContext('2d');
+	context.drawImage(img, 0, 0, img.width, img.height);
+	
+	
+} 
+
+function scaleImage(scale)
+{
+	imgScale *= scale;
+	var canvas = document.getElementById('canvas');
+	canvas.style.width = "" + (imgWidth*imgScale) +"px";
+	canvas.style.height = "" + (imgHeight*imgScale) +"px";
+	// 		
+	//canvas.height = imgHeight;
+}
+
+var hist = {};
+function handleTestClick()
+{
+	var canvas = document.getElementById('canvas');
+	var context = canvas.getContext('2d');
+
+	//var pixels = context.getImageData(110,110,120,120);
+	var pixels = context.getImageData(0,0, canvas.width, canvas.height);
+
+	var bwPixels = RGBA2A(pixels, context);
+	var bwPixelsSobolev = RGBA2A(pixels, context);
+
+	
+
+	var x, y;
+
+	applyKernelAlphaOnPixels(bwPixels, dxx, dyy, bwPixelsSobolev)
+
+	var grayPixels = A2RGBA(bwPixelsSobolev, context);
+	context.putImageData(grayPixels, 0,0);
+
+
+	return;
+
+	Pixastic.process(document.getElementById("canvas"), "histogram", {
+		average : false, paint:true,color:"rgba(255,255,255,0.5)",returnValue:hist
+	});
+	document.getElementById('debugText').value = hist.values;
+}
+
+
+function xffdlj() {
+
+	//pixels = context.getImageData(0,0, canvas.width, canvas.height);
+	//bwPixels = Filters.RGBA2A(pixels, context);
+	// applyKernelAlpha(pixels, kernel, x, y)
+}
+
+</script>
+
+					
+</head>
+<body onload="setup()">
+Click inide the white paper to find the inner contour using an antialiased search in the radon transformed gradient image. the intersections of the lines are calculated with cliffords NumJS :) Next step: Perspective correction :) This is so much more fun than work...
+<form name="controls" action="">
+	<input type="file" value="imageFile" id="imageFile" />
+	<input type="button" value="scale/1.2" onclick="scaleImage(1/1.2);"><input type="button" value="scale*1.2" onclick="scaleImage(1.2);">
+	<input type="button" value="Apply Sobel Operator" onclick="handleTestClick();">
+</form>
+
+<canvas id="canvas"></canvas>
+<br>
+<br>
+the mask used for clipping the gradient for the line search
+<br>
+<canvas id="canvas2"></canvas>
+<br>
+<br>
+the clipped magnitude of the gradient overlayed with the vectorized lines (this is used for the search so the vectorized lines should be very well aligned with the pixels)
+<br>
+<canvas id="canvas3"></canvas>
+	
+</body>
+</html>
