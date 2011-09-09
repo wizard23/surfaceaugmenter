@@ -57,6 +57,7 @@ function handleCanvasClick(evt) {
 	
 	if (!pixels) {
 		pixels = context.getImageData(0,0, canvas.width, canvas.height);
+		pixels2 = context.getImageData(0,0, canvas.width, canvas.height);
 		bwPixels = RGBA2A(pixels, context);
 		bwPixelsSobolev = createImageDataA(canvas.width, canvas.height);
 		applyKernelAlphaOnPixels(bwPixels, dxx, dyy, bwPixelsSobolev);
@@ -161,12 +162,56 @@ function handleCanvasClick(evt) {
 		for (var i = 0; i < bestGroup.length; i++) {
 			improveLine(bestGroup[i], bwPixelsSobolev, 4, 0.05);
 		}
-
 		for (var i = 0; i < bestGroup.length-2; i++) {
 			var x1 = intersectLines(bestGroup[i], bestGroup[i+1]);
 			var x2 = intersectLines(bestGroup[i+2], bestGroup[(i+3)%bestGroup.length]);
 			drawLine2(x1, x2, pixels, 0, 0, 255);
 		}
+
+
+
+		var pixelsIn = pixels, pixelsOut = pixels2;
+
+		var pointsIn = [];
+		for (var i = 0; i < bestGroup.length; i++) {
+			pointsIn.push(intersectLines(bestGroup[i], bestGroup[(i+1)%bestGroup.length]));
+		}
+
+		var dpi = 100;
+		var scale = dpi*0.0393700788; // 1mm = 0.0393700787 inch
+		var outW = 170*scale, outH = 250*scale;
+		if (distancePoints(bestGroup[0].p1, bestGroup[0].p2) < distancePoints(bestGroup[1].p1, bestGroup[1].p2)) {
+			var t = outW;
+			outW = outH;
+			outH = t;
+		}
+		var outX = (pixelsOut.width-outW)/2, outY = (pixelsOut.height-outH)/2;
+
+		var pointsOut = [{x:outX, y:outY}, {x:outX+outW, y:outY}, {x:outX+outW, y:outY+outH}, {x:outX, y:outY+outH}];
+ 
+		var params = calcParameters(pointsIn, pointsOut);
+		//var params = calcParameters(pointsOut, pointsIn);
+
+		for (var yOut = 0; yOut < pixelsOut.height; yOut++) {
+			for (var xOut = 0; xOut < pixelsOut.width; xOut++) {
+				//var pointIn = fwdMapXY(params, {x:xOut, y:yOut});
+				var pointIn = invMapXY(params, {x:xOut, y:yOut})
+				var xIn = Math.round(pointIn.x);
+				var yIn = Math.round(pointIn.y);
+				if (xIn >= 0 && yIn >= 0 && xIn < pixelsIn.width && yIn < pixelsIn.height) {
+					var idxIn = 4*(yIn*pixelsIn.width+xIn);
+					var idxOut = 4*(yOut*pixelsOut.width+xOut);
+
+					pixelsOut.data[idxOut+0] = pixelsIn.data[idxIn+0];
+					pixelsOut.data[idxOut+1] = pixelsIn.data[idxIn+1];
+					pixelsOut.data[idxOut+2] = pixelsIn.data[idxIn+2];
+					pixelsOut.data[idxOut+3] = pixelsIn.data[idxIn+3];
+				}
+			}
+		}
+
+
+
 
 		for (var i = 0; i < bestGroup.length; i++) {		
 			drawLine2(bestGroup[i].p1, bestGroup[i].p2, pixels, 0, 255, 0);
@@ -183,7 +228,7 @@ function handleCanvasClick(evt) {
 		canvas2.height = maskPixels.height;
 		var context2 = canvas2.getContext('2d');	
 		var grayPixels = A2RGBA(maskPixels, context2);
-		context2.putImageData(grayPixels, 0,0);	
+		context2.putImageData(pixels2, 0,0);	
 	
 		var canvas3 = document.getElementById('canvas3');
 		canvas3.width = maskPixels.width;

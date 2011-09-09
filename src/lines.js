@@ -51,6 +51,13 @@ function intersectLines(l1, l2) {
 	return {x:x, y:y};
 }
 
+function distancePoints(p1, p2) {
+	var dx = p1.x - p2.x;
+	var dy = p1.y - p2.y;
+	
+	return Math.sqrt(dx*dx+dy*dy);
+}
+
 function normalizeLine(line)
 {
 	var x = line.x;
@@ -205,15 +212,15 @@ function calcParameters(pointsIn, pointsOut)
 	var rhs = NumJS.MAT(8, 1);
 	var para;
 
-	for (int i = 0; i < 4; i++) {
+	for (var i = 0; i < 4; i++) {
 		// M.row(i*2 + 0) << pointsOut[i].x*pointsIn[i].x, pointsOut[i].x*pointsIn[i].y, -pointsIn[i].x, -pointsIn[i].y, -1,     0,    0,  0;
 		// M.row(i*2 + 1) << pointsOut[i].y*pointsIn[i].x, pointsOut[i].y*pointsIn[i].y,     0,    0,  0, -pointsIn[i].x, -pointsIn[i].y, -1;
 		// rhs(i*2 + 0) = -pointsOut[i].x;
 		// rhs(i*2 + 1) = -pointsOut[i].y;
 		M.paste(i*2+0,0,1,8, [pointsOut[i].x*pointsIn[i].x, pointsOut[i].x*pointsIn[i].y, -pointsIn[i].x, -pointsIn[i].y, -1,     0,    0,  0]);
-		M.paste(i*2+1,0,1,8, [pointsOut[i].y*pointsIn[i].x, pointsOut[i].y*pointsIn[i].y,     0,    0,  0, -pointsIn[i].x, -pointsIn[i].y, -1;
-		rhs.set(i*2+0,0) = -pointsOut[i].x;
-		rhs.set(i*2+1,0) = -pointsOut[i].y;
+		M.paste(i*2+1,0,1,8, [pointsOut[i].y*pointsIn[i].x, pointsOut[i].y*pointsIn[i].y,     0,    0,  0, -pointsIn[i].x, -pointsIn[i].y, -1]);
+		rhs.set(i*2+0,0, -pointsOut[i].x);
+		rhs.set(i*2+1,0, -pointsOut[i].y);
 	}
 
 	para = NumJS.SOLVE(M, rhs);
@@ -227,8 +234,21 @@ function fwdMapXY(matrix, point)
 	var a = d*point.x + e*point.y + f;
 	var b = g*point.x + h*point.y + i;
 	var c = k*x + l*y + 1;
-	return {x:xtic = a / c, ytic = b / c;
+	return {x:xtic = a / c, y:b / c};
 }
+
+function invMapXY(matrix, point)
+{
+	var k = matrix.get(0,0), l = matrix.get(1,0), d = matrix.get(2,0), e = matrix.get(3,0);
+	var f = matrix.get(4,0), g = matrix.get(5,0), h = matrix.get(6,0), i = matrix.get(7,0);
+	var xt = point.x, yt = point.y;
+	// Maxima: string(solve([xt*x*k + xt*y*l - x*d - y*e - f = -xt, yt*x*k + yt*y*l - x*g - y*h - i = -yt], [x,y]));
+	var x = -(e*(yt-i)-f*l*yt+(i*l-h)*xt+f*h)/(-d*l*yt+e*k*yt+(g*l-h*k)*xt+d*h-e*g);
+	var y = (d*(yt-i)-f*k*yt+(i*k-g)*xt+f*g)/(-d*l*yt+e*k*yt+(g*l-h*k)*xt+d*h-e*g);
+
+	return {x:x, y:y};
+}
+
 
 
 function improve1Point(p1, p2, a, bwPixelsSobolev, epsilon, thresh) {
