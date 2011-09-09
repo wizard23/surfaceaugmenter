@@ -48,7 +48,7 @@ function handleCanvasClick(evt) {
 	
 	if (!pixels) {
 		pixels = context.getImageData(0,0, canvas.width, canvas.height);
-		bwPixels = Filters.RGBA2A(pixels, context);
+		bwPixels = RGBA2A(pixels, context);
 	}
 
 	var coords = canvas.relMouseCoords(event);
