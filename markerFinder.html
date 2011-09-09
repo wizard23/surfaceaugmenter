@@ -170,32 +170,48 @@ function handleCanvasClick(evt) {
 
 
 
-		var pixelsIn = pixels, pixelsOut = pixels2;
+		var pixelsIn = pixels;
 
 		var pointsIn = [];
 		for (var i = 0; i < bestGroup.length; i++) {
 			pointsIn.push(intersectLines(bestGroup[i], bestGroup[(i+1)%bestGroup.length]));
 		}
 
-		var dpi = 100;
+		var dpi = 130; // 150;
 		var scale = dpi*0.0393700788; // 1mm = 0.0393700787 inch
-		var outW = 170*scale, outH = 250*scale;
+		var outW = 170*scale, outH = 250*scale; // size of my testpattern 170x250mm
 		if (distancePoints(bestGroup[0].p1, bestGroup[0].p2) < distancePoints(bestGroup[1].p1, bestGroup[1].p2)) {
 			var t = outW;
 			outW = outH;
 			outH = t;
 		}
-		var outX = (pixelsOut.width-outW)/2, outY = (pixelsOut.height-outH)/2;
-
-		var pointsOut = [{x:outX, y:outY}, {x:outX+outW, y:outY}, {x:outX+outW, y:outY+outH}, {x:outX, y:outY+outH}];
- 
+		var pointsOut = [{x:0, y:0}, {x:outW-1, y:0}, {x:outW-1, y:outH-1}, {x:0, y:outH-1}];
+		//var pointsOut = [{x:0, y:0}, {x:outW, y:0}, {x:outW, y:outH}, {x:0, y:outH}];
 		var params = calcParameters(pointsIn, pointsOut);
 		//var params = calcParameters(pointsOut, pointsIn);
 
+		var corners = [{x:0,y:0}, {x:pixelsIn.width-1, y:0}, {x:pixelsIn.width-1, y:pixelsIn.height-1}, {x:0, y:pixelsIn.height-1}];
+		//var corners = [{x:0,y:0}, {x:pixelsIn.width, y:0}, {x:pixelsIn.width, y:pixelsIn.height}, {x:0, y:pixelsIn.height}];
+		var minX = 100000, minY = 100000, maxX =-100000, maxY = -100000;
+		for (var i = 0; i < 4; i++) {
+			var cornerT = fwdMapXY(params, corners[i]);
+			//var cornerT = invMapXY(params, corners[i]);
+			//alert(cornerT.x + " " + cornerT.y);
+			if (cornerT.x < minX) minX = cornerT.x;
+			if (cornerT.x > maxX) maxX = cornerT.x;
+			if (cornerT.y < minY) minY = cornerT.y;
+			if (cornerT.y > maxY) maxY = cornerT.y;
+		}
+		var pixelsOut = context.createImageData(Math.ceil(maxX-minX), Math.ceil(maxY-minY));
+		
+
+
 		for (var yOut = 0; yOut < pixelsOut.height; yOut++) {
 			for (var xOut = 0; xOut < pixelsOut.width; xOut++) {
-				//var pointIn = fwdMapXY(params, {x:xOut, y:yOut});
-				var pointIn = invMapXY(params, {x:xOut, y:yOut})
+				//var pointIn = fwdMapXY(params, {x:xOut+minX, y:yOut+minY})
+				var pointIn = invMapXY(params, {x:xOut+minX, y:yOut+minY})
+				//pointIn.x -= minX;
+				//pointIn.y -= minY;
 				var xIn = Math.round(pointIn.x);
 				var yIn = Math.round(pointIn.y);
 				if (xIn >= 0 && yIn >= 0 && xIn < pixelsIn.width && yIn < pixelsIn.height) {
@@ -207,6 +223,7 @@ function handleCanvasClick(evt) {
 					pixelsOut.data[idxOut+2] = pixelsIn.data[idxIn+2];
 					pixelsOut.data[idxOut+3] = pixelsIn.data[idxIn+3];
 				}
+				//else alert(xIn + " " + xOut);
 			}
 		}
 
@@ -221,7 +238,11 @@ function handleCanvasClick(evt) {
 
 		context.putImageData(pixels, 0,0);
 		
-
+		var canvasResult = document.getElementById('canvasResult');
+		canvasResult.width = pixelsOut.width;
+		canvasResult.height = pixelsOut.height;
+		var contextResult = canvasResult.getContext('2d');	
+		contextResult.putImageData(pixelsOut, 0,0);	
 		
 		var canvas2 = document.getElementById('canvas2');
 		canvas2.width = maskPixels.width;
@@ -368,7 +389,8 @@ function xffdlj() {
 
 </form>
 
-<canvas id="canvas" width="400" height="300"></canvas>
+<canvas id="canvas"></canvas>
+<canvas id="canvasResult"></canvas>
 <canvas id="canvas2"></canvas>
 <canvas id="canvas3"></canvas>
 	
