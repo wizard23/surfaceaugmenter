@@ -395,18 +395,18 @@ function xffdlj() {
 					
 </head>
 <body onload="setup()">
-<b>Click inide the white paper with the black frame to do a perspective and size correction of the image!</b>
+<b>Click inside the white paper with the black frame to do a perspective and size correction of the image! After you click it might take some time because it does some numbercrunching in js...</b>
 <br/>
 <br/>
 The perspective and scaling is derived from the vectorized inner contour of the black frame. The lines are vectorized with an 
-antialiased search in the radon transformed gradient image (I always wanted to write this sentence :). Adjust the DPI of the output image to get more detail
+antialiased search in the radon transformed gradient image (I always wanted to write this sentence:). Adjust the DPI of the output image to get more detail
 but be aware that the resulting image might be huge.
 <br/>
 <br/>
 Clifford's NumJS is used for solving the 8-dimensional linear equation that appears in the 
 perspective matrix calculations...and thanks to clifford also for writing 
 <a href="http://svn.clifford.at/handicraft/2011/cliprect/cliprect.cc">cliprect.cc</a>...my perspective correction code is just 
-a 1:1 translation of clifford's code to js. Thanks to bernhard for showing me the radon transform in the context of line vectorization :)
+a 1:1 translation of clifford's code to js (so this makes this webpage GPL I guess:). Thanks to bernhard for showing me the radon transform in the context of line vectorization :)
 <form name="controls" action="">
 	<input type="file" value="imageFile" id="imageFile" />
 	<input type="button" value="scale/1.2" onclick="scaleImage(1/1.2);"><input type="button" value="scale*1.2" onclick="scaleImage(1.2);">
