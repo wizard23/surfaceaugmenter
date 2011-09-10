@@ -285,7 +285,6 @@ function improve1Point(p1, p2, a, bwPixelsSobolev, epsilon, thresh) {
 }
 
 function findLineCandidates(pixels, maskPixels, bwPixelsSobolev) {
-	applyMaskAlphaOnPixels(bwPixelsSobolev, maskPixels, bwPixelsSobolev);
 	var point = calculateCenterPoint(maskPixels);
 	var d = 4*Math.sqrt(point.n);
 

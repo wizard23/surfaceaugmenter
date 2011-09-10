@@ -56,6 +56,8 @@ function handleImageSelect(evt) {
 function handleCanvasClick(evt) {
 	var canvas = document.getElementById('canvas');
 	var context = canvas.getContext('2d');
+
+	clearDump();
 	
 	if (!pixels) {
 		pixels = context.getImageData(0,0, canvas.width, canvas.height);
@@ -63,6 +65,7 @@ function handleCanvasClick(evt) {
 		bwPixels = RGBA2A(pixels, context);
 		bwPixelsSobolev = createImageDataA(canvas.width, canvas.height);
 		applyKernelAlphaOnPixels(bwPixels, dxx, dyy, bwPixelsSobolev);
+		bwPixelsSobolevClipped = createImageDataA(canvas.width, canvas.height);
 		maskPixels = createImageDataA(canvas.width, canvas.height);
 		APixelsFill(maskPixels, 0);
 	}
@@ -142,26 +145,29 @@ function handleCanvasClick(evt) {
 		}, maskInitBlack);
 
 
-		applyMaskAlphaOnPixels(bwPixelsSobolev, maskPixels, bwPixelsSobolev)
+		applyMaskAlphaOnPixels(bwPixelsSobolev, maskPixels, bwPixelsSobolevClipped)
 
-		var bestGroup = findLineCandidates(pixels, maskPixels, bwPixelsSobolev);
+		var bestGroup = findLineCandidates(pixels, maskPixels, bwPixelsSobolevClipped);
 		for (var i = 0; i < bestGroup.length; i++) {
-			improveLine(bestGroup[i], bwPixelsSobolev, 4, 0.05);
+			improveLine(bestGroup[i], bwPixelsSobolevClipped, 4, 0.05);
 		}
-		for (var i = 0; i < bestGroup.length-2; i++) {
-			var x1 = intersectLines(bestGroup[i], bestGroup[i+1]);
-			var x2 = intersectLines(bestGroup[i+2], bestGroup[(i+3)%bestGroup.length]);
-			drawLine2(x1, x2, pixels, 0, 0, 255);
+		
+		var pointsIn = [];
+		for (var i = 0; i < bestGroup.length; i++) {
+			pointsIn.push(intersectLines(bestGroup[i], bestGroup[(i+1)%bestGroup.length]));
+		}
+		drawLine2(pointsIn[0], pointsIn[2], pixels, 0, 0, 255);
+		drawLine2(pointsIn[1], pointsIn[3], pixels, 0, 0, 255);
+		// draw outher lines in pixels
+		for (var i = 0; i < bestGroup.length; i++) {		
+			drawLine2(bestGroup[i].p1, bestGroup[i].p2, pixels, 0, 255, 0);
 		}
 
 
 
 		var pixelsIn = pixels;
 
-		var pointsIn = [];
-		for (var i = 0; i < bestGroup.length; i++) {
-			pointsIn.push(intersectLines(bestGroup[i], bestGroup[(i+1)%bestGroup.length]));
-		}
+
 
 		var minD = -1, minIdx = -1;
 		for (var i = 0; i < 4; i++) {
@@ -209,130 +215,107 @@ function handleCanvasClick(evt) {
 			if (cornerT.y < minY) minY = cornerT.y;
 			if (cornerT.y > maxY) maxY = cornerT.y;
 		}
-		var pixelsOutAliased = context.createImageData(Math.ceil(maxX-minX), Math.ceil(maxY-minY));
 		var pixelsOut = context.createImageData(Math.ceil(maxX-minX), Math.ceil(maxY-minY));
 		
+		if (document.getElementById("optionBilinear").checked) {
 
+			for (var yOut = 0; yOut < pixelsOut.height; yOut++) {
+				for (var xOut = 0; xOut < pixelsOut.width; xOut++) {
+					var pointIn = invMapXY(params, {x:xOut+minX, y:yOut+minY})
 
-		for (var yOut = 0; yOut < pixelsOut.height; yOut++) {
-			for (var xOut = 0; xOut < pixelsOut.width; xOut++) {
-				//var pointIn = fwdMapXY(params, {x:xOut+minX, y:yOut+minY})
-				var pointIn = invMapXY(params, {x:xOut+minX, y:yOut+minY})
-				//pointIn.x -= minX;
-				//pointIn.y -= minY;
-				var xNextIdx, xNextScale, yNextIdx, yNextScale, xyNextIdx, xyNextScale;
+					var xNextIdx, xNextScale, yNextIdx, yNextScale, xyNextIdx, xyNextScale;
 				
-				var xIn = Math.round(pointIn.x);
-				var yIn = Math.round(pointIn.y);
+					var xIn = Math.round(pointIn.x);
+					var yIn = Math.round(pointIn.y);
 				
-				var idxIn = 4*(yIn*pixelsIn.width+xIn);
-				if (xIn > pointIn.x) {
-					xNextIdx = idxIn-4;
-					xNextScale = xIn - pointIn.x;
-				}
-				else {
-					xNextIdx = idxIn+4;
-					xNextScale = pointIn.x - xIn;	
-				}
-
-				if (yIn > pointIn.y) {
-					yNextIdx = idxIn-4*pixelsIn.width;
-					yNextScale = yIn - pointIn.y;
-					
-					xyNextIdx = xNextIdx-4*pixelsIn.width;
-					//xyNextIdx = 0;
-				}
-				else {
-					yNextIdx = idxIn+4*pixelsIn.width;
-					yNextScale = pointIn.y - yIn;
-
-					xyNextIdx = xNextIdx+4*pixelsIn.width;
-					//xyNextIdx = 0;
-				}
-				
-				
-				if (xIn >= 0 && yIn >= 0 && xIn < pixelsIn.width && yIn < pixelsIn.height) {
 					var idxIn = 4*(yIn*pixelsIn.width+xIn);
-					var idxOut = 4*(yOut*pixelsOut.width+xOut);
+					if (xIn > pointIn.x) {
+						xNextIdx = idxIn-4;
+						xNextScale = xIn - pointIn.x;
+					}
+					else {
+						xNextIdx = idxIn+4;
+						xNextScale = pointIn.x - xIn;	
+					}
 
-					for (var i = 0; i < 4; i++) {
-						//pixelsOutAliased.data[idxOut+i] = 
-						//		        (1 - xNextScale) * (1 - yNextScale) * pixelsIn.data[idxIn+i] + 
-						//			(1 - xNextScale) * (yNextScale) * pixelsIn.data[yNextIdx+i] +
-						//			(xNextScale) * (1 - yNextScale) * pixelsIn.data[xNextIdx+i] +
-						//			(xNextScale) * (yNextScale) * pixelsIn.data[xyNextIdx+i];
-						
+					if (yIn > pointIn.y) {
+						yNextIdx = idxIn-4*pixelsIn.width;
+						yNextScale = yIn - pointIn.y;
+						xyNextIdx = xNextIdx-4*pixelsIn.width;
+					}
+					else {
+						yNextIdx = idxIn+4*pixelsIn.width;
+						yNextScale = pointIn.y - yIn;
+						xyNextIdx = xNextIdx+4*pixelsIn.width;
+					}
+				
+				
+					if (xIn >= 0 && yIn >= 0 && xIn < pixelsIn.width && yIn < pixelsIn.height) {
+						var idxIn = 4*(yIn*pixelsIn.width+xIn);
+						var idxOut = 4*(yOut*pixelsOut.width+xOut);
 
-
-
-						pixelsOutAliased.data[idxOut+i] =
-	(1-yNextScale) * ((1 - xNextScale) * pixelsIn.data[idxIn+i] + (xNextScale) * pixelsIn.data[xNextIdx+i]) +
-	(yNextScale) * ((1 - xNextScale) * pixelsIn.data[yNextIdx+i] + (xNextScale) * pixelsIn.data[xyNextIdx+i]);
-	
-
-						pixelsOut.data[idxOut+i] = pixelsIn.data[idxIn+i];
-					}					
-					//pixelsOut.data[idxOut+1] = pixelsIn.data[idxIn+1];
-					//pixelsOut.data[idxOut+2] = pixelsIn.data[idxIn+2];
-					//pixelsOut.data[idxOut+3] = pixelsIn.data[idxIn+3];
+						for (var i = 0; i < 4; i++) {
+							pixelsOut.data[idxOut+i] =
+							(1-yNextScale) * ((1 - xNextScale) * pixelsIn.data[idxIn+i] + 
+								(xNextScale) * pixelsIn.data[xNextIdx+i]) +
+-							(yNextScale) * ((1 - xNextScale) * pixelsIn.data[yNextIdx+i] + 
+								(xNextScale) * pixelsIn.data[xyNextIdx+i]);
+						}					
+					}
 				}
-				//else alert(xIn + " " + xOut);
+			}
+		}
+		else {
+			var idxOut = 0;
+			for (var yOut = 0; yOut < pixelsOut.height; yOut++) {
+				for (var xOut = 0; xOut < pixelsOut.width; xOut++) {
+					var pointIn = invMapXY(params, {x:xOut+minX, y:yOut+minY})
+					var xIn = Math.round(pointIn.x);
+					var yIn = Math.round(pointIn.y);
+					if (xIn >= 0 && yIn >= 0 && xIn < pixelsIn.width && yIn < pixelsIn.height) {
+						var idxIn = 4*(yIn*pixelsIn.width+xIn);
+			
+						pixelsOut.data[idxOut] = pixelsIn.data[idxIn+0];
+						pixelsOut.data[idxOut+1] = pixelsIn.data[idxIn+1];
+						pixelsOut.data[idxOut+2] = pixelsIn.data[idxIn+2];
+						pixelsOut.data[idxOut+3] = pixelsIn.data[idxIn+3];
+					}
+					idxOut += 4;
+				}
 			}
 		}
 
-
-
-
-		for (var i = 0; i < bestGroup.length; i++) {		
-			drawLine2(bestGroup[i].p1, bestGroup[i].p2, pixels, 0, 255, 0);
-			drawLine2A(bestGroup[i].p1, bestGroup[i].p2, bwPixelsSobolev, 0);
-		}
-
-
 		context.putImageData(pixels, 0,0);
-		
-		var canvasResultAliased = document.getElementById('canvasResultAliased');
-		canvasResultAliased.width = pixelsOutAliased.width;
-		canvasResultAliased.height = pixelsOutAliased.height;
-		var contextResultAliased = canvasResultAliased.getContext('2d');	
-		contextResultAliased.putImageData(pixelsOutAliased, 0,0);
-	
-		var grayPixels = A2RGBA(bwPixelsSobolev, context);
-		for (var i = 0; i < bestGroup.length; i++) {		
-			drawLine2(bestGroup[i].p1, bestGroup[i].p2, grayPixels, 255, 0, 0);
+
+		if (document.getElementById("optionBilinear").checked) {
+			dumpImageData(pixelsOut, "Perspective corrected image (bilinear filtered)");
 		}
-		
-		
-		dumpImageData(grayPixels);
-
-		/*
-		var canvasResult = document.getElementById('canvasResult');
-		canvasResult.width = pixelsOut.width;
-		canvasResult.height = pixelsOut.height;
-		var contextResult = canvasResult.getContext('2d');	
-		contextResult.putImageData(pixelsOut, 0,0);	
-		
-		var canvas2 = document.getElementById('canvas2');
-		canvas2.width = maskPixels.width;
-		canvas2.height = maskPixels.height;
-		var context2 = canvas2.getContext('2d');	
-		var grayPixels = A2RGBA(maskPixels, context2);
-		context2.putImageData(grayPixels, 0,0);	
-	
-		var canvas3 = document.getElementById('canvas3');
-		canvas3.width = maskPixels.width;
-		canvas3.height = maskPixels.height;
-		var context3 = canvas3.getContext('2d');	
-		var grayPixels = A2RGBA(bwPixelsSobolev, context3);
-		for (var i = 0; i < bestGroup.length; i++) {		
-			drawLine2(bestGroup[i].p1, bestGroup[i].p2, grayPixels, 255, 0, 0);
+		else {
+			dumpImageData(pixelsOut, "Perspective corrected image");
 		}
-		context3.putImageData(grayPixels, 0,0);	
-		*/	
-
-		
-
-
+	
+		if (document.getElementById("optionShowSobel").checked) 
+		{
+			var grayPixels = A2RGBA(bwPixelsSobolev, context);
+			dumpImageData(grayPixels, "magnitude of the sobel gradient");
+		}
+		if (document.getElementById("optionShowClippedSobel").checked) 
+		{
+			var grayPixels = A2RGBA(bwPixelsSobolevClipped, context);
+			dumpImageData(grayPixels, "clipped magnitude of the sobel gradient");
+		}
+		if (document.getElementById("optionShowClippedSobelLines").checked) 
+		{
+			var grayPixels = A2RGBA(bwPixelsSobolevClipped, context);
+			for (var i = 0; i < bestGroup.length; i++) {		
+				drawLine2(bestGroup[i].p1, bestGroup[i].p2, grayPixels, 255, 0, 0);
+			}
+			dumpImageData(grayPixels, "clipped magnitude of the gradient overlayed with the vectorized lines (this is used for the search so the vectorized lines should be very well aligned with the pixels");
+		}
+		if (document.getElementById("optionShowMask").checked) {
+			var grayPixels = A2RGBA(maskPixels, context);
+			dumpImageData(grayPixels);
+		}		
 	}
 	else {
 		if (x >= 0 && x < imgWidth && y >= 0 && y < imgHeight)
@@ -459,11 +442,19 @@ function changeMode(mode) {
 	}
 }
 
-function dumpImageData(pixels) {
+function clearDump() {
+	removeAllChildrenFromNode(document.getElementById("dump"));
+}
+
+function dumpImageData(pixels, text) {
 
 	var c = document.createElement('canvas');
 	c.width = pixels.width;
 	c.height = pixels.height;
+
+	var div = document.createElement('div');
+	div.innerText = text;
+	document.getElementById("dump").appendChild(div);
 	document.getElementById("dump").appendChild(c);
 
 	var context = c.getContext('2d');	
@@ -509,11 +500,11 @@ Inner Height of Marker in mm: <input type="text" id="markerHeight" value="250" /
 </fieldset>
 <fieldset>
   <legend>Options</legend>
-  <input type=checkbox checked="true"> Use Bilinear Interpolation<br/>
-  <input type=checkbox> Show Gradient Image<br/>
-  <input type=checkbox> Show Mask Image<br/>
-  <input type=checkbox> Show Clipped Gradient Image<br/>
-  <input type=checkbox> Show Clipped Gradient Image with vectorized lines<br/>
+  <input id="optionBilinear" type="checkbox" checked="true"> Use Bilinear Interpolation<br/>
+  <input id="optionShowSobel" type="checkbox" checked="true"> Show Sobel Gradient Image<br/>
+  <input id="optionShowClippedSobel" type="checkbox" checked="true"> Show Clipped Gradient Image<br/>
+  <input id="optionShowClippedSobelLines" type="checkbox" checked="true"> Show Clipped Sobel Gradient Image with vectorized lines<br/>
+  <input id="optionShowMask" type="checkbox" checked="true"> Show Mask Image<br/>
  </fieldset>
 </div>
 
@@ -525,33 +516,10 @@ Inner Height of Marker in mm: <input type="text" id="markerHeight" value="250" /
 
 <canvas id="canvas"></canvas>
 
-
 <div id="dump">
-Image Dump
+Result Images will be created here.
 </div>
 
-<br>
-<br>
-the perspective and size corrected image antialiased
-<br>
-<canvas id="canvasResultAliased"></canvas>
-<br>
-<br>
-the perspective and size corrected image non-antialiased
-<br>
-<canvas id="canvasResult"></canvas>
-<br>
-<br>
-the mask used for clipping the gradient for the line search
-<br>
-<canvas id="canvas2"></canvas>
-<br>
-<br>
-the clipped magnitude of the gradient overlayed with the vectorized lines (this is used for the search so the vectorized lines should be very well aligned with the pixels)
-<br>
-<canvas id="canvas3"></canvas>
-<br/><br/>
-Next steps: Antialiased corrected image and saving the output as png or jpg, whitebalance, handling of raw files (mad laughter!!!11elf)...js is so cool :) 
 <br/><br/>
 (GPL) by <a href="http://www.wizards23.net/">wizard23</a>
 <br/><br/>

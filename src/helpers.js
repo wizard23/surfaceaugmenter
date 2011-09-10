@@ -1,3 +1,12 @@
+function removeAllChildrenFromNode(node)
+{
+	if(node == undefined) return;
+	while (node.hasChildNodes())
+	{
+	  node.removeChild(node.firstChild);
+	}
+}
+
 
 function asyncLoadImageFromFile(file) {
 	if (file.type.indexOf("image") == 0) {
