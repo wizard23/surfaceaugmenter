@@ -74,8 +74,21 @@ function handleCanvasClick(evt) {
 	var x = coords.x/imgScale;
 	var y = coords.y/imgScale;
 
-	if (true || evt.ctrlKey || evt.button == 1)
+	if (document.getElementById("radioSearchTypeManual").checked)
 	{
+		if (x >= 0 && x < imgWidth && y >= 0 && y < imgHeight)
+			points.push([x, y]);
+
+		context.beginPath();
+		context.arc(x, y, 3, 0, Math.PI*2, true); 
+		context.closePath();
+		context.fill();
+	
+		if (points.length == 4)
+		{
+		}
+	}
+	else {
 		x = Math.round(x);
 		y = Math.round(y);
 
@@ -156,18 +169,17 @@ function handleCanvasClick(evt) {
 		for (var i = 0; i < bestGroup.length; i++) {
 			pointsIn.push(intersectLines(bestGroup[i], bestGroup[(i+1)%bestGroup.length]));
 		}
-		drawLine2(pointsIn[0], pointsIn[2], pixels, 0, 0, 255);
-		drawLine2(pointsIn[1], pointsIn[3], pixels, 0, 0, 255);
+
 		// draw outher lines in pixels
 		for (var i = 0; i < bestGroup.length; i++) {		
 			drawLine2(bestGroup[i].p1, bestGroup[i].p2, pixels, 0, 255, 0);
 		}
 
-
+//function doCorrection(pixels, pointsIn, bestGroup) {
+		drawLine2(pointsIn[0], pointsIn[2], pixels, 0, 0, 255);
+		drawLine2(pointsIn[1], pointsIn[3], pixels, 0, 0, 255);
 
 		var pixelsIn = pixels;
-
-
 
 		var minD = -1, minIdx = -1;
 		for (var i = 0; i < 4; i++) {
@@ -215,14 +227,38 @@ function handleCanvasClick(evt) {
 			if (cornerT.y < minY) minY = cornerT.y;
 			if (cornerT.y > maxY) maxY = cornerT.y;
 		}
-		var pixelsOut = context.createImageData(Math.ceil(maxX-minX), Math.ceil(maxY-minY));
 		
-		if (document.getElementById("optionBilinear").checked) {
 
+
+		if (document.getElementById("optionOutputNearest").checked) {
+			var pixelsOut = context.createImageData(Math.ceil(maxX-minX), Math.ceil(maxY-minY));
+
+			var idxOut = 0;
 			for (var yOut = 0; yOut < pixelsOut.height; yOut++) {
 				for (var xOut = 0; xOut < pixelsOut.width; xOut++) {
 					var pointIn = invMapXY(params, {x:xOut+minX, y:yOut+minY})
+					var xIn = Math.round(pointIn.x);
+					var yIn = Math.round(pointIn.y);
+					if (xIn >= 0 && yIn >= 0 && xIn < pixelsIn.width && yIn < pixelsIn.height) {
+						var idxIn = 4*(yIn*pixelsIn.width+xIn);
+			
+						pixelsOut.data[idxOut] = pixelsIn.data[idxIn+0];
+						pixelsOut.data[idxOut+1] = pixelsIn.data[idxIn+1];
+						pixelsOut.data[idxOut+2] = pixelsIn.data[idxIn+2];
+						pixelsOut.data[idxOut+3] = pixelsIn.data[idxIn+3];
+					}
+					idxOut += 4;
+				}
+			}
+			dumpImageData(pixelsOut, "Perspective corrected image (Filter: None, Nearest Neighbour)");
+		}		
+		if (document.getElementById("optionOutputBilinear").checked) {
+			var pixelsOut = context.createImageData(Math.ceil(maxX-minX), Math.ceil(maxY-minY));
 
+			var idxOut = 0;
+			for (var yOut = 0; yOut < pixelsOut.height; yOut++) {
+				for (var xOut = 0; xOut < pixelsOut.width; xOut++) {
+					var pointIn = invMapXY(params, {x:xOut+minX, y:yOut+minY})
 					var xNextIdx, xNextScale, yNextIdx, yNextScale, xyNextIdx, xyNextScale;
 				
 					var xIn = Math.round(pointIn.x);
@@ -249,50 +285,25 @@ function handleCanvasClick(evt) {
 						xyNextIdx = xNextIdx+4*pixelsIn.width;
 					}
 				
-				
 					if (xIn >= 0 && yIn >= 0 && xIn < pixelsIn.width && yIn < pixelsIn.height) {
-						var idxIn = 4*(yIn*pixelsIn.width+xIn);
 						var idxOut = 4*(yOut*pixelsOut.width+xOut);
 
-						for (var i = 0; i < 4; i++) {
-							pixelsOut.data[idxOut+i] =
-							(1-yNextScale) * ((1 - xNextScale) * pixelsIn.data[idxIn+i] + 
-								(xNextScale) * pixelsIn.data[xNextIdx+i]) +
--							(yNextScale) * ((1 - xNextScale) * pixelsIn.data[yNextIdx+i] + 
-								(xNextScale) * pixelsIn.data[xyNextIdx+i]);
-						}					
-					}
-				}
-			}
-		}
-		else {
-			var idxOut = 0;
-			for (var yOut = 0; yOut < pixelsOut.height; yOut++) {
-				for (var xOut = 0; xOut < pixelsOut.width; xOut++) {
-					var pointIn = invMapXY(params, {x:xOut+minX, y:yOut+minY})
-					var xIn = Math.round(pointIn.x);
-					var yIn = Math.round(pointIn.y);
-					if (xIn >= 0 && yIn >= 0 && xIn < pixelsIn.width && yIn < pixelsIn.height) {
-						var idxIn = 4*(yIn*pixelsIn.width+xIn);
-			
-						pixelsOut.data[idxOut] = pixelsIn.data[idxIn+0];
-						pixelsOut.data[idxOut+1] = pixelsIn.data[idxIn+1];
-						pixelsOut.data[idxOut+2] = pixelsIn.data[idxIn+2];
-						pixelsOut.data[idxOut+3] = pixelsIn.data[idxIn+3];
+						for (var i = 0; i < 3; i++) {
+							pixelsOut.data[idxOut+i] = (1-yNextScale) * ((1 - xNextScale) * pixelsIn.data[idxIn+i] + 
+							(xNextScale) * pixelsIn.data[xNextIdx+i]) + 
+							(yNextScale) * ((1 - xNextScale) * pixelsIn.data[yNextIdx+i] + 
+							(xNextScale) * pixelsIn.data[xyNextIdx+i]);
+						}	
+						pixelsOut.data[idxOut+3] = 255;				
 					}
 					idxOut += 4;
 				}
 			}
+			dumpImageData(pixelsOut, "Perspective corrected image (Filter: Bilinear)");	
 		}
+		
 
 		context.putImageData(pixels, 0,0);
-
-		if (document.getElementById("optionBilinear").checked) {
-			dumpImageData(pixelsOut, "Perspective corrected image (bilinear filtered)");
-		}
-		else {
-			dumpImageData(pixelsOut, "Perspective corrected image");
-		}
 	
 		if (document.getElementById("optionShowSobel").checked) 
 		{
@@ -316,50 +327,6 @@ function handleCanvasClick(evt) {
 			var grayPixels = A2RGBA(maskPixels, context);
 			dumpImageData(grayPixels);
 		}		
-	}
-	else {
-		if (x >= 0 && x < imgWidth && y >= 0 && y < imgHeight)
-			points.push([x, y]);
-
-		context.beginPath();
-		context.arc(x, y, 3, 0, Math.PI*2, true); 
-		context.closePath();
-		context.fill();
-	
-		if (points.length == 2)
-		{
-			var sum = 0;
-			var n = 0;
-			var w = bwPixels.width;
-
-			xiaolinWuLineIterator(points[0][0],points[0][1], points[1][0], points[1][1], function(x, y, c) { 
-				n += c; 
-				sum += c* bwPixels.data[x+w*y];
-				pixels.data[4*(x+w*y)] = (1-c) * pixels.data[4*(x+w*y)] + c * 0;
-				pixels.data[4*(x+w*y)+1] = (1-c) * pixels.data[4*(x+w*y)+1] + c * 0;
-				pixels.data[4*(x+w*y)+2] = (1-c) * pixels.data[4*(x+w*y)+2] + c * 0;
-				//pixels.data[4*(x+w*y)+3] = 255;
-			});
-			alert("s: " + sum + " n: " + n + " avg: " + (sum/n));
-
-			/*
-			lineIterator(points[0][0],points[0][1], points[1][0], points[1][1], function(x, y) { 
-				n++; 
-				sum += bwPixels[x+w*y];
-				pixels.data[4*(x+w*y)] = 255 - pixels.data[4*(x+w*y)];
-				pixels.data[4*(x+w*y)+1] = 255 - pixels.data[4*(x+w*y)+1];canvas.width = img.width;
-	canvas.height = img.height;
-				pixels.data[4*(x+w*y)+2] = 255 - pixels.data[4*(x+w*y)+2];
-			});
-			//*/
-			//alert("s: " + sum + " n: " + n + " " + (sum/n));
-
-			context.putImageData(pixels, 0, 0);
-		
-			//document.getElementById('outputText').value = "convert ..\\..\\web\\" + fileName + " -virtual-pixel transparent -distort Perspective \"" + s + "\" " + fileName + "out.png";
-			//handleLoad(img);
-			points = [];
-		}
 	}
 }
   
@@ -494,12 +461,14 @@ Inner Height of Marker in mm: <input type="text" id="markerHeight" value="250" /
 </fieldset>
 
 <fieldset>
-  <legend>How should the perspective correction be done?</legend>
-	<input id="radioOutputTypeCanvas" type="radio" name="outputType" value="canvas" checked="true">in the browser using js/canvas (slow when using high DPI!)<br>
-	<input id="radioOutputTypeImageMagick" type="radio" name="outputType" value="imageMagick">ImageMagick command line (recommended for larger DPI)<br>
+  <legend>How should the perspective correction be done? (Multiple output paths can be selected for comparison)</legend>
+  <input id="optionOutputNearest" type="checkbox" checked="true">Javascript/Canvas using No Filter/Nearest Neighbour<br/>
+  <input id="optionOutputBilinear" type="checkbox" checked="true">Javascript/Canvas using Bilinear Interpolation<br/>
+  <input id="radioOutputTypeImageMagick" type="checkbox" checked="true">ImageMagick command line (recommended for larger DPI)<br>
 </fieldset>
+
 <fieldset>
-  <legend>Options</legend>
+  <legend>Show me the guts!</legend>
   <input id="optionBilinear" type="checkbox" checked="true"> Use Bilinear Interpolation<br/>
   <input id="optionShowSobel" type="checkbox" checked="true"> Show Sobel Gradient Image<br/>
   <input id="optionShowClippedSobel" type="checkbox" checked="true"> Show Clipped Gradient Image<br/>
