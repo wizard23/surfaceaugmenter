@@ -73,7 +73,7 @@ function handleCanvasClick(evt) {
 	if (document.getElementById("radioSearchTypeManual").checked)
 	{
 		if (x >= 0 && x < imgWidth && y >= 0 && y < imgHeight)
-			points.push([x, y]);
+			points.push({x:x, y:y});
 
 		context.beginPath();
 		context.arc(x, y, 3, 0, Math.PI*2, true); 
@@ -105,7 +105,6 @@ function handleCanvasClick(evt) {
 				var blackAvg = blackSum/blackN;
 				var whiteVar = whiteVarsum/whiteN;
 				var blackVar = blackVarsum/blackN;
-
 
 				var idx = x+imgWidth*y;
 				var idx4 = 4*idx;
@@ -168,15 +167,24 @@ function handleCanvasClick(evt) {
 			pointsIn.push(intersectLines(bestGroup[i], bestGroup[(i+1)%bestGroup.length]));
 		}
 
-		// draw outher lines in pixels
-		for (var i = 0; i < bestGroup.length; i++) {		
-			drawLine2(bestGroup[i].p1, bestGroup[i].p2, pixels, 0, 255, 0);
-		}
+		
 		doCorrection(pixels, pointsIn, context, bestGroup);
 	}
 }
 
 function doCorrection(pixels, pointsIn, context, bestGroup) {
+		if (bestGroup == null) {
+			var bestGroup = [];
+			for (var i = 0; i < pointsIn.length; i++) {		
+				bestGroup.push({p1:pointsIn[i], p2:pointsIn[(i+1)%4]});
+			}
+		}
+		
+		// draw outher lines in pixels
+		for (var i = 0; i < bestGroup.length; i++) {		
+			drawLine2(bestGroup[i].p1, bestGroup[i].p2, pixels, 0, 255, 0);
+		}
+
 		drawLine2(pointsIn[0], pointsIn[2], pixels, 0, 0, 255);
 		drawLine2(pointsIn[1], pointsIn[3], pixels, 0, 0, 255);
 
