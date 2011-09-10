@@ -219,6 +219,7 @@ function handleCanvasClick(evt) {
 			if (cornerT.y < minY) minY = cornerT.y;
 			if (cornerT.y > maxY) maxY = cornerT.y;
 		}
+		var pixelsOutAliased = context.createImageData(Math.ceil(maxX-minX), Math.ceil(maxY-minY));
 		var pixelsOut = context.createImageData(Math.ceil(maxX-minX), Math.ceil(maxY-minY));
 		
 
@@ -229,16 +230,49 @@ function handleCanvasClick(evt) {
 				var pointIn = invMapXY(params, {x:xOut+minX, y:yOut+minY})
 				//pointIn.x -= minX;
 				//pointIn.y -= minY;
+				var xNextIdx, xNextScale, yNextIdx, yNextScale, xyNextIdx, xyNextScale;
+				
 				var xIn = Math.round(pointIn.x);
 				var yIn = Math.round(pointIn.y);
+				var idxIn = 4*(yIn*pixelsIn.width+xIn);
+				if (xIn > pointIn.x) {
+					xNextIdx = idxIn+4;
+					xNextScale = xIn - pointIn.x;
+				}
+				else {
+					xNextIdx = idxIn-4;
+					xNextScale = pointIn.x - xIn;	
+				}
+
+				if (yIn > pointIn.y) {
+					yNextIdx = idxIn+4*pixelsIn.width;
+					yNextScale = yIn - pointIn.y;
+					
+					xyNextIdx = xNextIdx+4*pixelsIn.width;
+					xyNextIdx = 0;
+				}
+				else {
+					yNextIdx = idxIn-4*pixelsIn.width;
+					yNextScale = pointIn.y - yIn;
+					xyNextIdx = xNextIdx-4*pixelsIn.width;
+					xyNextIdx = 0;
+				}
+				
+				
 				if (xIn >= 0 && yIn >= 0 && xIn < pixelsIn.width && yIn < pixelsIn.height) {
 					var idxIn = 4*(yIn*pixelsIn.width+xIn);
 					var idxOut = 4*(yOut*pixelsOut.width+xOut);
 
-					pixelsOut.data[idxOut+0] = pixelsIn.data[idxIn+0];
-					pixelsOut.data[idxOut+1] = pixelsIn.data[idxIn+1];
-					pixelsOut.data[idxOut+2] = pixelsIn.data[idxIn+2];
-					pixelsOut.data[idxOut+3] = pixelsIn.data[idxIn+3];
+					for (var i = 0; i < 4; i++) {
+						//pixelsOutAliased.data[idxOut+i] = (1 - xNextScale) * (1 - yNextScale) * pixelsIn.data[idxIn+i] + 
+						//			(1 - xNextScale) * (yNextScale) * pixelsIn.data[yNextIdx+i] +
+						//			(xNextScale) * (1 - yNextScale) * pixelsIn.data[xNextIdx+i] +
+						//			(xNextScale) * (yNextScale) * pixelsIn.data[xyNextIdx+i];
+						pixelsOut.data[idxOut+i] = pixelsIn.data[idxIn+i];
+					}					
+					//pixelsOut.data[idxOut+1] = pixelsIn.data[idxIn+1];
+					//pixelsOut.data[idxOut+2] = pixelsIn.data[idxIn+2];
+					//pixelsOut.data[idxOut+3] = pixelsIn.data[idxIn+3];
 				}
 				//else alert(xIn + " " + xOut);
 			}
@@ -255,6 +289,12 @@ function handleCanvasClick(evt) {
 
 		context.putImageData(pixels, 0,0);
 		
+		var canvasResultAliased = document.getElementById('canvasResultAliased');
+		canvasResultAliased.width = pixelsOutAliased.width;
+		canvasResultAliased.height = pixelsOutAliased.height;
+		var contextResultAliased = canvasResultAliased.getContext('2d');	
+		contextResultAliased.putImageData(pixelsOutAliased, 0,0);	
+
 		var canvasResult = document.getElementById('canvasResult');
 		canvasResult.width = pixelsOut.width;
 		canvasResult.height = pixelsOut.height;
@@ -407,6 +447,9 @@ Clifford's NumJS is used for solving the 8-dimensional linear equation that appe
 perspective matrix calculations...and thanks to clifford also for writing 
 <a href="http://svn.clifford.at/handicraft/2011/cliprect/cliprect.cc">cliprect.cc</a>...my perspective correction code is just 
 a 1:1 translation of clifford's code to js (so this makes this webpage GPL I guess:). Thanks to bernhard for showing me the radon transform in the context of line vectorization :)
+<br/>
+<br/>
+I collect pictures of applications of the SurfaceAugmenter in <a href="http://www.flickr.com/photos/wizard23/sets/72157627506093695/">this flickr set.</a> 
 <form name="controls" action="">
 	<input type="file" value="imageFile" id="imageFile" />
 	<input type="button" value="scale/1.2" onclick="scaleImage(1/1.2);"><input type="button" value="scale*1.2" onclick="scaleImage(1.2);">
@@ -418,7 +461,7 @@ a 1:1 translation of clifford's code to js (so this makes this webpage GPL I gue
 <canvas id="canvas"></canvas>
 <br>
 <br>
-the perspective and size corrected image
+the perspective and size corrected image non-antialiased
 <br>
 <canvas id="canvasResult"></canvas>
 <br>
@@ -437,5 +480,11 @@ Next steps: Antialiased corrected image and saving the output as png or jpg, whi
 (GPL) by <a href="http://www.wizards23.net/">wizard23</a>
 <br/><br/>
 thanks for scrolling down this far!
+
+the perspective and size corrected image antialiased
+<br>
+<canvas id="canvasResultAliased"></canvas>
+<br>
+<br>
 </body>
 </html>
