@@ -182,8 +182,12 @@ function handleCanvasClick(evt) {
 
 		var dpi = parseFloat(document.getElementById('outputDpi').value);
 		var scale = dpi*0.0393700788; // 1mm = 0.0393700787 inch
-		var outW = 170*scale, outH = 250*scale; // size of my testpattern 170x250mm
-		if (distancePoints(pointsIn[0], pointsIn[1]) > distancePoints(pointsIn[1], pointsIn[2])) {
+		var markerWidth = parseFloat(document.getElementById("markerWidth").value);
+		var markerHeight = parseFloat(document.getElementById("markerHeight").value);
+		var outW = markerWidth*scale, outH = markerHeight*scale; // size of my testpattern 170x250mm
+		var inputW = distancePoints(pointsIn[0], pointsIn[1]);
+		var inputH = distancePoints(pointsIn[1], pointsIn[2])
+		if ((inputW > inputH) != (outW > outH)) {
 			var t = outW;
 			outW = outH;
 			outH = t;
