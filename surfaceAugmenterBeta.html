@@ -4,14 +4,10 @@
 <style> </style>
 <script type="text/javascript" src="libs/NumJS/NumJS.js"></script>
 <script type="text/javascript">NumJS.loader_html("libs/NumJS/")</script>
-
 <script type="text/javascript" src="src/image.js"></script>
 <script type="text/javascript" src="src/helpers.js"></script>
 <script type="text/javascript" src="src/lines.js"></script>
-<script type="text/javascript" src="libs/pixastic/pixastic.core.js"></script>
-<script type="text/javascript" src="libs/pixastic/actions/histogram.js"></script>
 <script type="text/javascript">
-
 
 var img;
 var imgWidth, imgHeight;
@@ -86,6 +82,8 @@ function handleCanvasClick(evt) {
 	
 		if (points.length == 4)
 		{
+			doCorrection(pixels, points, context, null);
+			points = [];
 		}
 	}
 	else {
@@ -174,8 +172,11 @@ function handleCanvasClick(evt) {
 		for (var i = 0; i < bestGroup.length; i++) {		
 			drawLine2(bestGroup[i].p1, bestGroup[i].p2, pixels, 0, 255, 0);
 		}
+		doCorrection(pixels, pointsIn, context, bestGroup);
+	}
+}
 
-//function doCorrection(pixels, pointsIn, bestGroup) {
+function doCorrection(pixels, pointsIn, context, bestGroup) {
 		drawLine2(pointsIn[0], pointsIn[2], pixels, 0, 0, 255);
 		drawLine2(pointsIn[1], pointsIn[3], pixels, 0, 0, 255);
 
@@ -227,8 +228,6 @@ function handleCanvasClick(evt) {
 			if (cornerT.y < minY) minY = cornerT.y;
 			if (cornerT.y > maxY) maxY = cornerT.y;
 		}
-		
-
 
 		if (document.getElementById("optionOutputNearest").checked) {
 			var pixelsOut = context.createImageData(Math.ceil(maxX-minX), Math.ceil(maxY-minY));
@@ -318,17 +317,19 @@ function handleCanvasClick(evt) {
 		if (document.getElementById("optionShowClippedSobelLines").checked) 
 		{
 			var grayPixels = A2RGBA(bwPixelsSobolevClipped, context);
+			if (bestGroup != null) {
 			for (var i = 0; i < bestGroup.length; i++) {		
 				drawLine2(bestGroup[i].p1, bestGroup[i].p2, grayPixels, 255, 0, 0);
+			}
 			}
 			dumpImageData(grayPixels, "clipped magnitude of the gradient overlayed with the vectorized lines (this is used for the search so the vectorized lines should be very well aligned with the pixels");
 		}
 		if (document.getElementById("optionShowMask").checked) {
 			var grayPixels = A2RGBA(maskPixels, context);
 			dumpImageData(grayPixels);
-		}		
-	}
+		}
 }
+
   
 function drawImage(img) {
 	var canvas = document.getElementById('canvas');
