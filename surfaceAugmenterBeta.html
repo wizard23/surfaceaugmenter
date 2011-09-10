@@ -26,6 +26,8 @@ var maskOutBlack = 100;
 
 function setup()
 {
+	changeMode('advanced');
+
 	document.getElementById('imageFile').addEventListener('change', handleImageSelect, false);
 	document.getElementById('canvas').addEventListener('click', handleCanvasClick, false);
 
@@ -112,30 +114,18 @@ function handleCanvasClick(evt) {
 						whiteSum += val; whiteVarsum += Math.abs(val-whiteAvg); whiteN++;
 
 						maskPixels.data[idx] = maskLine;
-
-						//pixels.data[idx4] = 255;
-						//pixels.data[idx4+1] = 0;
-						//pixels.data[idx4+2] = 0;
-
 						return maskLine;
 					}
 
 					blackSum += val; blackVarsum += Math.abs(val-blackAvg); blackN++;
 					//whiteSum += val; whiteVarsum += Math.abs(val-whiteAvg); whiteN++;
 					maskPixels.data[idx] = maskInitBlack;
-					
-					//pixels.data[idx4] = 0;
-					//pixels.data[idx4+1] = 255;
-					//pixels.data[idx4+2] = 0;
 
 					return maskInitBlack;
 				}
 				else if (state == maskLine)
 				{
 					if (val < (0.7*blackAvg+0.3*whiteAvg)) {
-						//pixels.data[idx4] = 255;
-						//pixels.data[idx4+1] = 255;
-						//pixels.data[idx4+2] = 0;
 
 						maskPixels.data[idx] = maskOutBlack;
 						return maskOutBlack;
@@ -144,10 +134,6 @@ function handleCanvasClick(evt) {
 					whiteSum += val; whiteVarsum += Math.abs(val-whiteAvg); whiteN++;
 
 					maskPixels.data[idx] = maskLine;
-
-					//pixels.data[idx4] = 0;
-					//pixels.data[idx4+1] = 0;
-					//pixels.data[idx4+2] = 255;
 
 					return maskLine;
 				}
@@ -305,8 +291,17 @@ function handleCanvasClick(evt) {
 		canvasResultAliased.width = pixelsOutAliased.width;
 		canvasResultAliased.height = pixelsOutAliased.height;
 		var contextResultAliased = canvasResultAliased.getContext('2d');	
-		contextResultAliased.putImageData(pixelsOutAliased, 0,0);	
+		contextResultAliased.putImageData(pixelsOutAliased, 0,0);
+	
+		var grayPixels = A2RGBA(bwPixelsSobolev, context);
+		for (var i = 0; i < bestGroup.length; i++) {		
+			drawLine2(bestGroup[i].p1, bestGroup[i].p2, grayPixels, 255, 0, 0);
+		}
+		
+		
+		dumpImageData(grayPixels);
 
+		/*
 		var canvasResult = document.getElementById('canvasResult');
 		canvasResult.width = pixelsOut.width;
 		canvasResult.height = pixelsOut.height;
@@ -328,7 +323,8 @@ function handleCanvasClick(evt) {
 		for (var i = 0; i < bestGroup.length; i++) {		
 			drawLine2(bestGroup[i].p1, bestGroup[i].p2, grayPixels, 255, 0, 0);
 		}
-		context3.putImageData(grayPixels, 0,0);		
+		context3.putImageData(grayPixels, 0,0);	
+		*/	
 
 		
 
@@ -442,35 +438,94 @@ function xffdlj() {
 	// applyKernelAlpha(pixels, kernel, x, y)
 }
 
+var allowedModes = ['auto', 'advanced', 'lab'];
+
+function changeMode(mode) {
+	for (var i = 0; i < allowedModes.length; i++) {
+		var m = allowedModes[i];
+		var id = m + "Controlls";
+		if (m == mode) {
+			//document.getElementById(id).style.visibility = "visible";
+			document.getElementById(id).style.display = "block";
+		}
+		else {
+			//document.getElementById(id).style.visibility = "hidden";
+			document.getElementById(id).style.display = "none";
+		}
+	}
+}
+
+function dumpImageData(pixels) {
+
+	var c = document.createElement('canvas');
+	c.width = pixels.width;
+	c.height = pixels.height;
+	document.getElementById("dump").appendChild(c);
+
+	var context = c.getContext('2d');	
+	context.putImageData(pixels, 0,0);	
+}
+
 </script>
 
 					
 </head>
 <body onload="setup()">
-<b>Click inside the white paper with the black frame to do a perspective and size correction of the image! After you click it might take some time because it does some numbercrunching in js...</b>
-<br/>
-<br/>
-The perspective and scaling is derived from the vectorized inner contour of the black frame. The lines are vectorized with an 
-antialiased search in the radon transformed gradient image (I always wanted to write this sentence:). Adjust the DPI of the output image to get more detail
-but be aware that the resulting image might be huge.
-<br/>
-<br/>
-Clifford's NumJS is used for solving the 8-dimensional linear equation that appears in the 
-perspective matrix calculations...and thanks to clifford also for writing 
-<a href="http://svn.clifford.at/handicraft/2011/cliprect/cliprect.cc">cliprect.cc</a>...my perspective correction code is just 
-a 1:1 translation of clifford's code to js (so this makes this webpage GPL I guess:). Thanks to bernhard for showing me the radon transform in the context of line vectorization :)
-<br/>
-<br/>
-I collect pictures of applications of the SurfaceAugmenter in <a href="http://www.flickr.com/photos/wizard23/sets/72157627506093695/">this flickr set.</a> 
+What do you want to do today? 
+<a href="javascript:changeMode('auto');">Auto Perspective Correction</a> |
+<a href="javascript:changeMode('advanced');">Advandced Perspective Correction</a> |
+<a href="javascript:changeMode('lab');">Image Lab (Debug)</a> 
+<br/><br/>
 <form name="controls" action="">
 	<input type="file" value="imageFile" id="imageFile" />
-	<input type="button" value="scale/1.2" onclick="scaleImage(1/1.2);"><input type="button" value="scale*1.2" onclick="scaleImage(1.2);">
+	<input type="button" value="scale/1.2" onclick="scaleImage(1/1.2);">
+	<input type="button" value="scale*1.2" onclick="scaleImage(1.2);">
+<br/><br/>
+
+DPI of output image: <input type="text" id="outputDpi" value="25" /><br/>
+<div id="autoControlls">
+Click inside the inner white area of the marker to start the perspective correction.
+</div>
+
+<div id="advancedControlls">
+Inner Width of Marker in mm: <input type="text" id="markerWidth" value="170" /><br/>
+Inner Height of Marker in mm: <input type="text" id="markerHeight" value="250" /><br/>
+
+<fieldset>
+  <legend>How should the marker be found?</legend>
+	<input id="radioSearchTypeAuto" type="radio" name="searchType" value="auto">Automatic marker detection: Click anywhere in the image to start the perspective correction<br>
+	<input id="radioSearchTypeClickCenter" type="radio" name="searchType" value="click" checked="true">Click inside the inner white area of the marker to start the perspective correction<br>
+	<input id="radioSearchTypeManual" type="radio" name="searchType" value="manual">Manually click onto the 4 corners in clockwise order to start the perspective correction<br>
+</fieldset>
+
+<fieldset>
+  <legend>How should the perspective correction be done?</legend>
+	<input id="radioOutputTypeCanvas" type="radio" name="outputType" value="canvas" checked="true">in the browser using js/canvas (slow when using high DPI!)<br>
+	<input id="radioOutputTypeImageMagick" type="radio" name="outputType" value="imageMagick">ImageMagick command line (recommended for larger DPI)<br>
+</fieldset>
+<fieldset>
+  <legend>Options</legend>
+  <input type=checkbox checked="true"> Use Bilinear Interpolation<br/>
+  <input type=checkbox> Show Gradient Image<br/>
+  <input type=checkbox> Show Mask Image<br/>
+  <input type=checkbox> Show Clipped Gradient Image<br/>
+  <input type=checkbox> Show Clipped Gradient Image with vectorized lines<br/>
+ </fieldset>
+</div>
+
+<div id="labControlls">
 	<input type="button" value="Apply Sobel Operator" onclick="handleTestClick();">
-	DPI: <input type="text" id="outputDpi" value="25" />
+</div>
 
 </form>
 
 <canvas id="canvas"></canvas>
+
+
+<div id="dump">
+Image Dump
+</div>
+
 <br>
 <br>
 the perspective and size corrected image antialiased

@@ -1,0 +1,50 @@
+<b>Click inside the white paper with the black frame to do a perspective and size correction of the image! After you click it might take some time because it does some numbercrunching in js...</b>
+<br/>
+<br/>
+The perspective and scaling is derived from the vectorized inner contour of the black frame. The lines are vectorized with an 
+antialiased search in the radon transformed gradient image (I always wanted to write this sentence:). Adjust the DPI of the output image to get more detail
+but be aware that the resulting image might be huge.
+<br/>
+<br/>
+Clifford's NumJS is used for solving the 8-dimensional linear equation that appears in the 
+perspective matrix calculations...and thanks to clifford also for writing 
+<a href="http://svn.clifford.at/handicraft/2011/cliprect/cliprect.cc">cliprect.cc</a>...my perspective correction code is just 
+a 1:1 translation of clifford's code to js (so this makes this webpage GPL I guess:). Thanks to bernhard for showing me the radon transform in the context of line vectorization :)
+<br/>
+<br/>
+I collect pictures of applications of the SurfaceAugmenter in <a href="http://www.flickr.com/photos/wizard23/sets/72157627506093695/">this flickr set.</a> 
+<form name="controls" action="">
+	<input type="file" value="imageFile" id="imageFile" />
+	<input type="button" value="scale/1.2" onclick="scaleImage(1/1.2);"><input type="button" value="scale*1.2" onclick="scaleImage(1.2);">
+	<input type="button" value="Apply Sobel Operator" onclick="handleTestClick();">
+	DPI: <input type="text" id="outputDpi" value="25" />
+
+</form>
+
+<canvas id="canvas"></canvas>
+<br>
+<br>
+the perspective and size corrected image antialiased
+<br>
+<canvas id="canvasResultAliased"></canvas>
+<br>
+<br>
+the perspective and size corrected image non-antialiased
+<br>
+<canvas id="canvasResult"></canvas>
+<br>
+<br>
+the mask used for clipping the gradient for the line search
+<br>
+<canvas id="canvas2"></canvas>
+<br>
+<br>
+the clipped magnitude of the gradient overlayed with the vectorized lines (this is used for the search so the vectorized lines should be very well aligned with the pixels)
+<br>
+<canvas id="canvas3"></canvas>
+<br/><br/>
+Next steps: Antialiased corrected image and saving the output as png or jpg, whitebalance, handling of raw files (mad laughter!!!11elf)...js is so cool :) 
+<br/><br/>
+(GPL) by <a href="http://www.wizards23.net/">wizard23</a>
+<br/><br/>
+thanks for scrolling down this far!
