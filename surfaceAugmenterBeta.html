@@ -448,7 +448,7 @@ function getDpi() {
 What do you want to do today? 
 <a href="javascript:changeMode('auto');">Auto Perspective Correction</a> |
 <a href="javascript:changeMode('advanced');">Advandced Perspective Correction</a> |
-<a href="javascript:changeMode('lab');">Image Lab (Debug)</a> 
+<a href="javascript:changeMode('lab');">Image Lab</a> |
 <a href="javascript:changeMode('about');">About</a> 
 <br/><br/>
 <form name="controls" action="">
@@ -466,14 +466,14 @@ Inner Height of Marker in mm: <input type="text" id="markerHeight" value="250" /
   <legend>How should the marker be found?</legend>
 	<input id="radioSearchTypeManual" type="radio" name="searchType" value="manual">Manually click onto the 4 corners in clockwise order to start the perspective correction<br>
 	<input id="radioSearchTypeClickCenter" type="radio" name="searchType" value="click" checked="true">Click inside the inner white area of the marker to start the perspective correction<br>
-	<input id="radioSearchTypeAuto" type="radio" name="searchType" value="auto">NOT IMPLEMENTED: Automatic marker detection: Click anywhere in the image to start the perspective correction<br>
+	<input id="radioSearchTypeAuto" type="radio" name="searchType" value="auto">NOT IMPLEMENTED YET: Automatic marker detection: Click anywhere in the image to start the perspective correction<br>
 </fieldset>
 
 <fieldset>
   <legend>How should the perspective correction be done? (Multiple output paths can be selected for comparison)</legend>
   <input id="optionOutputNearest" type="checkbox">Javascript/Canvas using No Filter/Nearest Neighbour (slow for large images)<br/>
   <input id="optionOutputBilinear" type="checkbox" checked="true">Javascript/Canvas using Bilinear Interpolation (slow for large images)<br/>
-  <input id="optionOutputImageMagick" type="checkbox" checked="true">ImageMagick command line (recommended for larger DPI)<br>
+  <input id="optionOutputImageMagick" type="checkbox" checked="true">NOT IMPLEMENTED YET: ImageMagick command line (recommended for larger DPI)<br>
 </fieldset>
 
 <fieldset>
@@ -493,24 +493,24 @@ Inner Height of Marker in mm: <input type="text" id="markerHeight" value="250" /
 The perspective and scaling is derived from the vectorized inner contour of the black frame. The lines are vectorized with an 
 antialiased search in the radon transformed gradient image (I always wanted to write this sentence:). Adjust the DPI of the output image to get more detail
 but be aware that the resulting image might be huge.
-<br/>
-<br/>
+<br/><br/>
 Clifford's NumJS is used for solving the 8-dimensional linear equation that appears in the 
 perspective matrix calculations...and thanks to clifford also for writing 
 <a href="http://svn.clifford.at/handicraft/2011/cliprect/cliprect.cc">cliprect.cc</a>...my perspective correction code is just 
 a 1:1 translation of clifford's code to js (so this makes this webpage GPL I guess:). Thanks to bernhard for showing me the radon transform in the context of line vectorization :)
-<br/>
-<br/>
+<br/><br/>
 The latest version of the full source code can be found here:
-<a href="https://bitbucket.org/wizard23/surfaceaugmenter"https://bitbucket.org/wizard23/surfaceaugmenter</a>
-<br/>
-<br/>
+<a href="https://bitbucket.org/wizard23/surfaceaugmenter">https://bitbucket.org/wizard23/surfaceaugmenter</a>
+<br/><br/>
+questions, ideas, comments to: <a href="mailto:wizards23+surfaces@gmail.com">wizards23+surfaces@gmail.com</a>
+<br/><br/>
 I collect pictures of applications of the SurfaceAugmenter in <a href="http://www.flickr.com/photos/wizard23/sets/72157627506093695/">this flickr set.</a> 
 <br/><br/>
-(GPL) by <a href="http://www.wizards23.net/">wizard23</a>
+(GPL) by <a href="http://www.wizards23.net">wizard23</a>
+
 </div>
 
-
+<br/>
 <input type="file" value="imageFile" id="imageFile" />
 	<input type="button" value="scale/1.2" onclick="scaleImage(1/1.2);">
 	<input type="button" value="scale*1.2" onclick="scaleImage(1.2);">
