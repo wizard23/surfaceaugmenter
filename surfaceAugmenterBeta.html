@@ -233,15 +233,15 @@ function doCorrection(pixels, pointsIn, context, bestGroup) {
 
 		//var corners = [{x:0,y:0}, {x:pixelsIn.width-1, y:0}, {x:pixelsIn.width-1, y:pixelsIn.height-1}, {x:0, y:pixelsIn.height-1}];
 		var corners = [{x:0,y:0}, {x:pixelsIn.width, y:0}, {x:pixelsIn.width, y:pixelsIn.height}, {x:0, y:pixelsIn.height}];
-		var minX = 100000, minY = 100000, maxX =-100000, maxY = -100000;
+		var minX=0, minY=0, maxX=0, maxY=0;
 		
 		for (var i = 0; i < 4; i++) {
 			var cornerT = fwdMapXY(params, corners[i]);
 			//var cornerT = invMapXY(params, corners[i]);
-			if (cornerT.x < minX) minX = cornerT.x;
-			if (cornerT.x > maxX) maxX = cornerT.x;
-			if (cornerT.y < minY) minY = cornerT.y;
-			if (cornerT.y > maxY) maxY = cornerT.y;
+			if (cornerT.x < minX || i==0) minX = cornerT.x;
+			if (cornerT.x > maxX || i==0) maxX = cornerT.x;
+			if (cornerT.y < minY || i==0) minY = cornerT.y;
+			if (cornerT.y > maxY || i==0) maxY = cornerT.y;
 		}
 
 		if (document.getElementById("optionOutputNearest").checked) {
@@ -266,7 +266,7 @@ function doCorrection(pixels, pointsIn, context, bestGroup) {
 					idxOut += 4;
 				}
 			}
-			dumpImageData(pixelsOut, "Perspective corrected image (Filter: None, Nearest Neighbour)");
+			dumpImageData(pixelsOut, "<br />Perspective corrected image (Filter: None, Nearest Neighbour)");
 		}		
 		if (document.getElementById("optionOutputBilinear").checked) {
 			var pixelsOut = context.createImageData(Math.ceil(maxX-minX), Math.ceil(maxY-minY));
@@ -315,7 +315,7 @@ function doCorrection(pixels, pointsIn, context, bestGroup) {
 					idxOut += 4;
 				}
 			}
-			dumpImageData(pixelsOut, "Perspective corrected image (Filter: Bilinear)");	
+			dumpImageData(pixelsOut, "<br />Perspective corrected image (Filter: Bilinear)");	
 		}
 		if (document.getElementById("optionOutputImageMagick").checked) 
 		{
@@ -323,14 +323,14 @@ function doCorrection(pixels, pointsIn, context, bestGroup) {
 			for (i = 0; i < pointsIn.length; i++)
 			{
 				p = pointsIn[i];
-				r = {x:pointsOut[i].x - minX, y:pointsOut[i].y-minY};
+				r = {x:pointsOut[i].x, y:pointsOut[i].y};
 				pointsText += "" + p.x + "," + p.y + "," + r.x + "," + r.y + " ";
 			}
 			var sizeText = (maxX-minX)+"x"+(maxY-minY);
 sizeText = "2000x2000"
 			var cmdLine = "convert " + fileName + " -virtual-pixel transparent +distort Perspective \"" + 
 				pointsText + "\" +repage "  +  fileName + "_corrected.jpg";
-			dumpHTML("<br/>ImageMagic Command Line: <br/><br/>" + cmdLine + "<br/><br/>");
+			dumpHTML("<br/>ImageMagick Command Line: <div style='border-width:2px; border-style:solid;  border-color:red; padding:10px;'>" + cmdLine + "</div>");
 		}
 		
 
@@ -339,16 +339,16 @@ sizeText = "2000x2000"
 		if (document.getElementById("optionShowSobel").checked) 
 		{
 			var grayPixels = A2RGBA(bwPixelsSobolev, context);
-			dumpImageData(grayPixels, "magnitude of the sobel gradient");
+			dumpImageData(grayPixels, "<br />magnitude of the sobel gradient");
 		}
 		if (document.getElementById("optionShowMask").checked) {
 			var grayPixels = A2RGBA(maskPixels, context);
-			dumpImageData(grayPixels, "the mask used for clipping the gradient for the line search");
+			dumpImageData(grayPixels, "<br />the mask used for clipping the gradient for the line search");
 		}
 		if (document.getElementById("optionShowClippedSobel").checked) 
 		{
 			var grayPixels = A2RGBA(bwPixelsSobolevClipped, context);
-			dumpImageData(grayPixels, "clipped magnitude of the sobel gradient");
+			dumpImageData(grayPixels, "<br />clipped magnitude of the sobel gradient");
 		}
 		if (document.getElementById("optionShowClippedSobelLines").checked) 
 		{
@@ -358,7 +358,7 @@ sizeText = "2000x2000"
 				drawLine2(bestGroup[i].p1, bestGroup[i].p2, grayPixels, 255, 0, 0);
 			}
 			}
-			dumpImageData(grayPixels, "clipped magnitude of the gradient overlayed with the vectorized lines (this is used for the search so the vectorized lines should be very well aligned with the pixels");
+			dumpImageData(grayPixels, "<br />clipped magnitude of the gradient overlayed with the vectorized lines (this is used for the search so the vectorized lines should be very well aligned with the pixels");
 		}
 }
 
@@ -370,8 +370,10 @@ function drawImage(img) {
 	canvas.height = img.height;
 	imgWidth = img.width;
 	imgHeight = img.height;
+	scaleImage(1);
 	
 	var context = canvas.getContext('2d');
+	
 	context.drawImage(img, 0, 0, img.width, img.height);
 	
 	
@@ -454,19 +456,16 @@ function dumpImageData(pixels, text) {
 	c.height = pixels.height;
 
 	var div = document.createElement('div');
-	div.innerText = text;
+	div.innerHTML = text;
+	div.appendChild(c);
 	document.getElementById("dump").appendChild(div);
-	document.getElementById("dump").appendChild(c);
 
 	var context = c.getContext('2d');	
 	context.putImageData(pixels, 0,0);	
 }
 
 function getDpi() {
-	if (currentMode == "auto")
-		return parseFloat(document.getElementById('outputDpiAuto').value);
-	if (currentMode == "advanced")
-		return parseFloat(document.getElementById('outputDpiAdvanced').value);
+	return parseFloat(document.getElementById('outputDpiAdvanced').value);
 	return 5; // defualt value for other modes (something small is good)
 }
 
@@ -483,27 +482,29 @@ What do you want to do today?
 <hr/>
 <form name="controls" action="">
 <div id="autoControlls">
-DPI of output image: <input type="text" id="outputDpiAuto" value="25" /><br/>
 Click inside the inner white area of the marker to start the perspective correction.
 </div>
 
 <div id="advancedControlls">
-DPI of output image: <input type="text" id="outputDpiAdvanced" value="25" /><br/>
-Inner Width of Marker in mm: <input type="text" id="markerWidth" value="170" /><br/>
-Inner Height of Marker in mm: <input type="text" id="markerHeight" value="250" /><br/>
-
 <fieldset>
-  <legend>How should the marker be found?</legend>
+  <legend>How should the <a href="markers/250mmx170mm.svg">marker</a> be found?</legend>
 	<input id="radioSearchTypeManual" type="radio" name="searchType" value="manual">Manually click onto the 4 corners in clockwise order to start the perspective correction<br>
 	<input id="radioSearchTypeClickCenter" type="radio" name="searchType" value="click" checked="true">Click inside the inner white area of the marker to start the perspective correction<br>
-	<input id="radioSearchTypeAuto" type="radio" name="searchType" value="auto" disabled="true">NOT IMPLEMENTED YET: Automatic marker detection: Click anywhere in the image to start the perspective correction<br>
+	<input id="radioSearchTypeAuto" type="radio" name="searchType" value="auto" disabled="true">not implemented yet: Automatic marker detection: Click anywhere in the image to start the perspective correction<br>
+</fieldset>
+
+<fieldset>
+  <legend>Dimensions</legend>
+DPI of output image: <input type="text" id="outputDpiAdvanced" value="25" /><br/>
+Inner Width of marker in mm: <input type="text" id="markerWidth" value="170" /><br/>
+Inner Height of marker in mm: <input type="text" id="markerHeight" value="250" /><br/>
 </fieldset>
 
 <fieldset>
   <legend>How should the perspective correction be done? (Multiple output paths can be selected for comparison)</legend>
   <input id="optionOutputNearest" type="checkbox">Javascript/Canvas using No Filter/Nearest Neighbour (slow for large images)<br/>
   <input id="optionOutputBilinear" type="checkbox" checked="true">Javascript/Canvas using Bilinear Interpolation (slow for large images)<br/>
-  <input id="optionOutputImageMagick" type="checkbox" checked="true">ImageMagick command line (recommended for larger DPI)<br>
+  <input id="optionOutputImageMagick" type="checkbox" checked="true"><a href="http://www.imagemagick.org/">ImageMagick</a> command line (recommended for larger DPI)<br>
 </fieldset>
 
 <fieldset>
@@ -520,8 +521,9 @@ Inner Height of Marker in mm: <input type="text" id="markerHeight" value="250" /
 </div>
 
 <div id="aboutControlls">
-The perspective and scaling is derived from the vectorized inner contour of the black frame. The lines are vectorized with an 
-antialiased search in the radon transformed gradient image (I always wanted to write this sentence:). Adjust the DPI of the output image to get more detail
+The perspective and scaling is derived from the vectorized inner contour of the black frame of the marker. 
+I use a unscaled printed version of <a href="markers/250mmx170mm.svg">this svg</a> which has an inner size of 170x250mm.
+The lines are vectorized with an antialiased search in the radon transformed gradient image (I always wanted to write this sentence:). Adjust the DPI of the output image to get more detail
 but be aware that the resulting image might be huge.
 <br/><br/>
 Clifford's NumJS is used for solving the 8-dimensional linear equation that appears in the 
