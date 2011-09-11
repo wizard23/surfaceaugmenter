@@ -330,7 +330,7 @@ function doCorrection(pixels, pointsIn, context, bestGroup) {
 sizeText = "2000x2000"
 			var cmdLine = "convert " + fileName + " -virtual-pixel transparent +distort Perspective \"" + 
 				pointsText + "\" +repage "  +  fileName + "_corrected.jpg";
-			dumpHTML("ImageMagic Command Line:<br/>" + cmdLine + "<br/><br/>");
+			dumpHTML("<br/>ImageMagic Command Line: <br/><br/>" + cmdLine + "<br/><br/>");
 		}
 		
 
@@ -480,7 +480,7 @@ What do you want to do today?
 <a href="javascript:changeMode('advanced');">Advandced Perspective Correction</a> |
 <a href="javascript:changeMode('lab');">Image Lab</a> |
 <a href="javascript:changeMode('about');">About</a> 
-<br/><br/>
+<hr/>
 <form name="controls" action="">
 <div id="autoControlls">
 DPI of output image: <input type="text" id="outputDpiAuto" value="25" /><br/>
@@ -540,21 +540,17 @@ I collect pictures of applications of the SurfaceAugmenter in <a href="http://ww
 
 </div>
 
-<br/>
+<hr/>
 <input type="file" value="imageFile" id="imageFile" />
 	<input type="button" value="scale/1.2" onclick="scaleImage(1/1.2);">
 	<input type="button" value="scale*1.2" onclick="scaleImage(1.2);">
-<br/><br/>
-
 </form>
-
 <canvas id="canvas"></canvas>
-
+<hr/>
 <div id="dump">
 Result Images will be created here.
 </div>
-
-<br/><br/>
+<hr/>
 (GPL) by <a href="http://www.wizards23.net/">wizard23</a>
 </body>
 </html>
