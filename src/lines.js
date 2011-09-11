@@ -233,8 +233,8 @@ function fwdMapXY(matrix, point)
 	var f = matrix.get(4,0), g = matrix.get(5,0), h = matrix.get(6,0), i = matrix.get(7,0);
 	var a = d*point.x + e*point.y + f;
 	var b = g*point.x + h*point.y + i;
-	var c = k*x + l*y + 1;
-	return {x:xtic = a / c, y:b / c};
+	var c = k*point.x + l*point.y + 1;
+	return {x:a / c, y:b / c};
 }
 
 function invMapXY(matrix, point)

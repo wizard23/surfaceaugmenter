@@ -11,6 +11,7 @@
 
 var img;
 var imgWidth, imgHeight;
+var fileName = "test2.jpg";
 
 var imgScale = 1.0;
 var points = [];
@@ -35,18 +36,22 @@ function setup()
 		this.className = '';  // what for?
 		e.preventDefault();
 		var file = e.dataTransfer.files[0];
-		asyncLoadImageFromFile(file);
+		myLoadHandler(file);
 	};
 
+	asyncLoadImageFromURL(fileName);
+}
 
-	asyncLoadImageFromURL("test2.jpg");
+function myLoadHandler(file) {
+	fileName = file.name;
+	asyncLoadImageFromFile(file);
 }
 
 function handleImageSelect(evt) {
 	pixels = undefined;
 	var files = evt.target.files; // FileList object
 	var file = files[0];
-	asyncLoadImageFromFile(file);
+	myLoadHandler(file);
 }
 
 function handleCanvasClick(evt) {
@@ -219,18 +224,20 @@ function doCorrection(pixels, pointsIn, context, bestGroup) {
 			outW = outH;
 			outH = t;
 		}
-		var pointsOut = [{x:0, y:0}, {x:outW-1, y:0}, {x:outW-1, y:outH-1}, {x:0, y:outH-1}];
-		//var pointsOut = [{x:0, y:0}, {x:outW, y:0}, {x:outW, y:outH}, {x:0, y:outH}];
+		//var pointsOut = [{x:0, y:0}, {x:outW-1, y:0}, {x:outW-1, y:outH-1}, {x:0, y:outH-1}];
+		var pointsOut = [{x:0, y:0}, {x:outW, y:0}, {x:outW, y:outH}, {x:0, y:outH}];
+		
+
 		var params = calcParameters(pointsIn, pointsOut);
 		//var params = calcParameters(pointsOut, pointsIn);
 
-		var corners = [{x:0,y:0}, {x:pixelsIn.width-1, y:0}, {x:pixelsIn.width-1, y:pixelsIn.height-1}, {x:0, y:pixelsIn.height-1}];
-		//var corners = [{x:0,y:0}, {x:pixelsIn.width, y:0}, {x:pixelsIn.width, y:pixelsIn.height}, {x:0, y:pixelsIn.height}];
+		//var corners = [{x:0,y:0}, {x:pixelsIn.width-1, y:0}, {x:pixelsIn.width-1, y:pixelsIn.height-1}, {x:0, y:pixelsIn.height-1}];
+		var corners = [{x:0,y:0}, {x:pixelsIn.width, y:0}, {x:pixelsIn.width, y:pixelsIn.height}, {x:0, y:pixelsIn.height}];
 		var minX = 100000, minY = 100000, maxX =-100000, maxY = -100000;
+		
 		for (var i = 0; i < 4; i++) {
 			var cornerT = fwdMapXY(params, corners[i]);
 			//var cornerT = invMapXY(params, corners[i]);
-			//alert(cornerT.x + " " + cornerT.y);
 			if (cornerT.x < minX) minX = cornerT.x;
 			if (cornerT.x > maxX) maxX = cornerT.x;
 			if (cornerT.y < minY) minY = cornerT.y;
@@ -243,7 +250,9 @@ function doCorrection(pixels, pointsIn, context, bestGroup) {
 			var idxOut = 0;
 			for (var yOut = 0; yOut < pixelsOut.height; yOut++) {
 				for (var xOut = 0; xOut < pixelsOut.width; xOut++) {
-					var pointIn = invMapXY(params, {x:xOut+minX, y:yOut+minY})
+					//var pointIn = fwdMapXY(params, {x:xOut+minX, y:yOut+minY});
+					var pointIn = invMapXY(params, {x:xOut+minX, y:yOut+minY});
+
 					var xIn = Math.round(pointIn.x);
 					var yIn = Math.round(pointIn.y);
 					if (xIn >= 0 && yIn >= 0 && xIn < pixelsIn.width && yIn < pixelsIn.height) {
@@ -307,6 +316,21 @@ function doCorrection(pixels, pointsIn, context, bestGroup) {
 				}
 			}
 			dumpImageData(pixelsOut, "Perspective corrected image (Filter: Bilinear)");	
+		}
+		if (document.getElementById("optionOutputImageMagick").checked) 
+		{
+			var pointsText = "";
+			for (i = 0; i < pointsIn.length; i++)
+			{
+				p = pointsIn[i];
+				r = {x:pointsOut[i].x - minX, y:pointsOut[i].y-minY};
+				pointsText += "" + p.x + "," + p.y + "," + r.x + "," + r.y + " ";
+			}
+			var sizeText = (maxX-minX)+"x"+(maxY-minY);
+sizeText = "2000x2000"
+			var cmdLine = "convert " + fileName + " -virtual-pixel transparent +distort Perspective \"" + 
+				pointsText + "\" +repage "  +  fileName + "_corrected.jpg";
+			dumpHTML("ImageMagic Command Line:<br/>" + cmdLine + "<br/><br/>");
 		}
 		
 
@@ -417,6 +441,12 @@ function clearDump() {
 	removeAllChildrenFromNode(document.getElementById("dump"));
 }
 
+function dumpHTML(text) {
+	var div = document.createElement('div');
+	div.innerHTML = text;
+	document.getElementById("dump").appendChild(div);
+}
+
 function dumpImageData(pixels, text) {
 
 	var c = document.createElement('canvas');
@@ -466,14 +496,14 @@ Inner Height of Marker in mm: <input type="text" id="markerHeight" value="250" /
   <legend>How should the marker be found?</legend>
 	<input id="radioSearchTypeManual" type="radio" name="searchType" value="manual">Manually click onto the 4 corners in clockwise order to start the perspective correction<br>
 	<input id="radioSearchTypeClickCenter" type="radio" name="searchType" value="click" checked="true">Click inside the inner white area of the marker to start the perspective correction<br>
-	<input id="radioSearchTypeAuto" type="radio" name="searchType" value="auto">NOT IMPLEMENTED YET: Automatic marker detection: Click anywhere in the image to start the perspective correction<br>
+	<input id="radioSearchTypeAuto" type="radio" name="searchType" value="auto" disabled="true">NOT IMPLEMENTED YET: Automatic marker detection: Click anywhere in the image to start the perspective correction<br>
 </fieldset>
 
 <fieldset>
   <legend>How should the perspective correction be done? (Multiple output paths can be selected for comparison)</legend>
   <input id="optionOutputNearest" type="checkbox">Javascript/Canvas using No Filter/Nearest Neighbour (slow for large images)<br/>
   <input id="optionOutputBilinear" type="checkbox" checked="true">Javascript/Canvas using Bilinear Interpolation (slow for large images)<br/>
-  <input id="optionOutputImageMagick" type="checkbox" checked="true">NOT IMPLEMENTED YET: ImageMagick command line (recommended for larger DPI)<br>
+  <input id="optionOutputImageMagick" type="checkbox" checked="true">ImageMagick command line (recommended for larger DPI)<br>
 </fieldset>
 
 <fieldset>
