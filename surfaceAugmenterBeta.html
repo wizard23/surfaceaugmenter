@@ -48,10 +48,29 @@ function myLoadHandler(file) {
 }
 
 function handleImageSelect(evt) {
-	pixels = undefined;
+	clearCaches();
 	var files = evt.target.files; // FileList object
 	var file = files[0];
 	myLoadHandler(file);
+}
+
+function clearCaches() {
+	pixels = null;
+	bwPixels = null;
+}
+
+function ensureCaches(context, cacheRest) {
+	if (!pixels) {
+		pixels = context.getImageData(0,0, canvas.width, canvas.height);
+	}
+	if (cacheRest && !bwPixels) {
+		bwPixels = RGBA2A(pixels, context);
+		bwPixelsSobolev = createImageDataA(canvas.width, canvas.height);
+		applyKernelAlphaOnPixels(bwPixels, dxx, dyy, bwPixelsSobolev);
+		bwPixelsSobolevClipped = createImageDataA(canvas.width, canvas.height);
+		maskPixels = createImageDataA(canvas.width, canvas.height);
+		APixelsFill(maskPixels, 0);
+	}
 }
 
 function handleCanvasClick(evt) {
@@ -60,16 +79,7 @@ function handleCanvasClick(evt) {
 
 	clearDump();
 	
-	if (!pixels) {
-		pixels = context.getImageData(0,0, canvas.width, canvas.height);
-		//pixels2 = context.getImageData(0,0, canvas.width, canvas.height);
-		bwPixels = RGBA2A(pixels, context);
-		bwPixelsSobolev = createImageDataA(canvas.width, canvas.height);
-		applyKernelAlphaOnPixels(bwPixels, dxx, dyy, bwPixelsSobolev);
-		bwPixelsSobolevClipped = createImageDataA(canvas.width, canvas.height);
-		maskPixels = createImageDataA(canvas.width, canvas.height);
-		APixelsFill(maskPixels, 0);
-	}
+	ensureCaches(context, false);
 
 	var coords = canvas.relMouseCoords(evt);
 	var x = coords.x/imgScale;
@@ -92,6 +102,7 @@ function handleCanvasClick(evt) {
 		}
 	}
 	else {
+		ensureCaches(context, true);
 		x = Math.round(x);
 		y = Math.round(y);
 
@@ -338,27 +349,32 @@ sizeText = "2000x2000"
 	
 		if (document.getElementById("optionShowSobel").checked) 
 		{
+			ensureCaches(context, true);
 			var grayPixels = A2RGBA(bwPixelsSobolev, context);
-			dumpImageData(grayPixels, "<br />magnitude of the sobel gradient");
+			dumpImageData(grayPixels, "<br />magnitude of the sobel gradient<br/>");
 		}
-		if (document.getElementById("optionShowMask").checked) {
+		if (document.getElementById("optionShowMask").checked) 
+		{
+			ensureCaches(context, true);
 			var grayPixels = A2RGBA(maskPixels, context);
-			dumpImageData(grayPixels, "<br />the mask used for clipping the gradient for the line search");
+			dumpImageData(grayPixels, "<br />the mask used for clipping the gradient for the line search<br/>");
 		}
 		if (document.getElementById("optionShowClippedSobel").checked) 
 		{
+			ensureCaches(context, true);
 			var grayPixels = A2RGBA(bwPixelsSobolevClipped, context);
-			dumpImageData(grayPixels, "<br />clipped magnitude of the sobel gradient");
+			dumpImageData(grayPixels, "<br />clipped magnitude of the sobel gradient<br/>");
 		}
 		if (document.getElementById("optionShowClippedSobelLines").checked) 
 		{
+			ensureCaches(context, true);
 			var grayPixels = A2RGBA(bwPixelsSobolevClipped, context);
 			if (bestGroup != null) {
 			for (var i = 0; i < bestGroup.length; i++) {		
 				drawLine2(bestGroup[i].p1, bestGroup[i].p2, grayPixels, 255, 0, 0);
 			}
 			}
-			dumpImageData(grayPixels, "<br />clipped magnitude of the gradient overlayed with the vectorized lines (this is used for the search so the vectorized lines should be very well aligned with the pixels");
+			dumpImageData(grayPixels, "<br />clipped magnitude of the gradient overlayed with the vectorized lines (this is used for the search so the vectorized lines should be very well aligned with the pixels<br/>");
 		}
 }
 
