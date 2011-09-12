@@ -29,7 +29,7 @@
 
 var img;
 var imgWidth, imgHeight;
-var fileName = "test2.jpg";
+var fileName = "images/lab/conv_base_test.png";
 
 var imgScale = 1.0;
 var points = [];
@@ -41,7 +41,7 @@ var maskOutBlack = 100;
 
 function setup()
 {
-	changeMode('advanced');
+	changeMode('lab');
 
 	document.getElementById('imageFile').addEventListener('change', handleImageSelect, false);
 	document.getElementById('canvas').addEventListener('click', handleCanvasClick, false);
@@ -423,36 +423,6 @@ function scaleImage(scale)
 	//canvas.height = imgHeight;
 }
 
-var hist = {};
-function handleTestClick()
-{
-	var canvas = document.getElementById('canvas');
-	var context = canvas.getContext('2d');
-
-	//var pixels = context.getImageData(110,110,120,120);
-	var pixels = context.getImageData(0,0, canvas.width, canvas.height);
-
-	var bwPixels = RGBA2A(pixels, context);
-	var bwPixelsSobolev = RGBA2A(pixels, context);
-
-	
-
-	var x, y;
-
-	applyKernelAlphaOnPixels(bwPixels, dxx, dyy, bwPixelsSobolev)
-
-	var grayPixels = A2RGBA(bwPixelsSobolev, context);
-	context.putImageData(grayPixels, 0,0);
-
-
-	return;
-
-	Pixastic.process(document.getElementById("canvas"), "histogram", {
-		average : false, paint:true,color:"rgba(255,255,255,0.5)",returnValue:hist
-	});
-	document.getElementById('debugText').value = hist.values;
-}
-
 
 var allowedModes = ['advanced', 'lab', 'about'];
 var currentMode;
@@ -503,6 +473,235 @@ function getDpi() {
 	return 5; // defualt value for other modes (something small is good)
 }
 
+
+function handleTestClick()
+{
+	var canvas = document.getElementById('canvas');
+	var context = canvas.getContext('2d');
+
+	var pixels = context.getImageData(0,0, canvas.width, canvas.height);
+
+	var bwPixels = RGBA2A(pixels, context);
+	var bwPixelsSobolev = RGBA2A(pixels, context);
+
+	applyKernelAlphaOnPixels(bwPixels, dxx, dyy, bwPixelsSobolev);
+	var grayPixels = A2RGBA(bwPixelsSobolev, context);
+	context.putImageData(grayPixels, 0,0);
+}
+
+/* alternating circle bad
+var circle = {data:[
+	 0,-1, 1,-1, 0,  
+	 1, 0, 0, 0, 1,  
+	-1, 0, 0, 0,-1,  
+	 1, 0, 0, 0, 1,  
+	 0,-1, 1,-1, 0,  
+	], width:5, height:5, scale:1};
+
+var circleInv = {data:[
+	 0,-1, 1,-1, 0,  
+	 1, 0, 0, 0, 1,  
+	-1, 0, 0, 0,-1,  
+	 1, 0, 0, 0, 1,  
+	 0,-1, 1,-1, 0,  
+	], width:5, height:5, scale:1/16};
+//*/
+
+/* big circle
+var circle = {data:[
+	0, 0,-1,-1,-1, 0, 0, 
+	0, 1, 0, 0, 0,-1, 0, 
+	1, 0, 0, 0, 0, 0,-1, 
+	1, 0, 0, 0, 0, 0,-1, 
+	1, 0, 0, 0, 0, 0,-1, 
+	0, 1, 0, 0, 0,-1, 0, 
+	0, 0, 1, 1, 1, 0, 0, 
+	], width:7, height:7, scale:1};
+
+var circleInv = {data:[
+	0, 0,-1,-1,-1, 0, 0, 
+	0, 1, 0, 0, 0,-1, 0, 
+	1, 0, 0, 0, 0, 0,-1, 
+	1, 0, 0, 0, 0, 0,-1, 
+	1, 0, 0, 0, 0, 0,-1, 
+	0, 1, 0, 0, 0,-1, 0, 
+	0, 0, 1, 1, 1, 0, 0,  
+	], width:7, height:7, scale:1/16};
+//*/
+
+/* big circle
+var circle = {data:[
+	0, 0, 1, 1, 1, 0, 0, 
+	0, 1, 0, 0, 0, 1, 0, 
+	1, 0, 0, 0, 0, 0, 1, 
+	1, 0, 0, 0, 0, 0, 1, 
+	1, 0, 0, 0, 0, 0, 1, 
+	0, 1, 0, 0, 0, 1, 0, 
+	0, 0, 1, 1, 1, 0, 0, 
+	], width:7, height:7, scale:1/16};
+
+var circleInv = {data:[
+	0, 0, 1, 1, 1, 0, 0, 
+	0, 1, 0, 0, 0, 1, 0, 
+	1, 0, 0, 0, 0, 0, 1, 
+	1, 0, 0, 0, 0, 0, 1, 
+	1, 0, 0, 0, 0, 0, 1, 
+	0, 1, 0, 0, 0, 1, 0, 
+	0, 0, 1, 1, 1, 0, 0,  
+	], width:7, height:7, scale:1/12};
+//*/
+
+/*
+var circle = {data:[
+	 0, 1, 1, 1, 0,  
+	 1, 0, 0, 0, 1,  
+	 1, 0, 0, 0, 1,  
+	 1, 0, 0, 0, 1,  
+	 0, 1, 1, 1, 0,  
+	], width:5, height:5, scale:1/12};
+
+var circleInv = {data:[
+	 0, 1, 1, 1, 0,  
+	 1, 0, 0, 0, 1,  
+	 1, 0, 0, 0, 1,  
+	 1, 0, 0, 0, 1,  
+	 0, 1, 1, 1, 0,   
+	], width:5, height:5, scale:1/12};
+
+/*
+var circle = {data:[
+	 0, 1, 0,  
+	 1, 0, 1,  
+	 0, 1, 0,
+	], width:3, height:3, scale:1/4};
+
+var circleInv = {data:[
+	 0, 1, 0,  
+	 1, 0, 1,  
+	 0, 1, 0,
+	], width:3, height:3, scale:1/4};
+
+//*/
+
+///*
+var circle = {data:[
+	    0, 1/4, 0,  
+	 1/4,    0, 1/4, 
+	    0, 1/4, 0,
+	], width:3, height:3, scale:1};
+
+var circleInv = {data:[
+	    0, 1/4, 0,  
+	 1/4,   0, 1/4, 
+	    0, 1/4, 0,
+//	    0, -1/4, 0,  
+//	 -1/4,    -1, -1/4, 
+//	    0, -1/4, 0,
+	], width:3, height:3, scale:1};
+
+//*/
+
+function handleTestClick2()
+{
+	clearDump();
+
+	var canvas = document.getElementById('canvas');
+	var context = canvas.getContext('2d');
+
+	var pixels = context.getImageData(0,0, canvas.width, canvas.height);
+	var bwPixels = RGBA2A(pixels, context);
+	var bwPixelsOut = RGBA2A(pixels, context);
+	var bwPixelsOut2 = RGBA2A(pixels, context);
+	APixelsFill(bwPixelsOut, 0);
+
+	applyBaseA(bwPixels, circle, bwPixelsOut);
+
+	applyKernelA(bwPixelsOut, circleInv, bwPixelsOut2);
+
+	var grayPixels = A2RGBA(bwPixelsOut, context);
+	dumpImageData(grayPixels, "pixels<br/>");
+
+	var grayPixels = A2RGBA(bwPixelsOut2, context);
+	dumpImageData(grayPixels, "pixels<br/>");
+
+}
+
+function handleTestClick3()
+{
+}
+
+
+
+
+
+
+/*
+function applyKernelAlphaOnPixel(pixels, kernel, x, y)
+{
+	var xx, yy, kernelIndex, pixelIndex;
+	var sum = 0;
+
+	var startx = (kernel.width-1)/2;
+	var starty = (kernel.height-1)/2;
+
+	kernelIndex = 0;
+	for (yy = -starty; yy <= starty; yy++) {
+		for (xx = -startx; xx <= startx; xx++) {
+			var xxx = x + xx;
+			var yyy = y + yy;
+			if (xxx > 0 && yyy > 0 && xxx < pixels.width && yyy < pixels.height) {
+				pixelIndex =  xxx + yyy*pixels.width;
+				sum += kernel.data[kernelIndex]*pixels.data[pixelIndex];
+			}
+			kernelIndex++;
+		}
+	}
+	return sum*kernel.scale;
+}
+*/
+
+function applyKernelA(pixels, kernel, pixelsOut)
+{
+	var outIndex = 0;
+	for (y = 0; y < pixels.height; y++) {
+		for (x = 0; x < pixels.width; x++) {
+			var val = applyKernelAlphaOnPixel(pixels, kernel, x, y);
+			pixelsOut.data[outIndex] = val;
+			outIndex++;
+		}
+	}
+}
+
+function applyBaseA(pixels, base, pixelsOut)
+{
+	var startx = (base.width-1)/2;
+	var starty = (base.height-1)/2;
+
+	var outIndex = 0;
+	for (y = 0; y < pixels.height; y++) {
+		for (x = 0; x < pixels.width; x++) {
+
+			var s = pixels.data[outIndex];
+
+			var kernelIndex = 0;
+			for (yy = -starty; yy <= starty; yy++) {
+				for (xx = -startx; xx <= startx; xx++) {
+					var xxx = Math.round(x + xx);
+					var yyy = Math.round(y + yy);
+					if (xxx > 0 && yyy > 0 && xxx < pixels.width && yyy < pixels.height) {
+
+						pixelIndex =  xxx + yyy*pixels.width;
+						pixelsOut.data[pixelIndex] += base.scale*base.data[kernelIndex]*s;
+					}
+					kernelIndex++;
+				}	
+			}
+			outIndex++;
+		}
+	}
+}
+
+
 </script>
 
 					
@@ -510,13 +709,13 @@ function getDpi() {
 <body onload="setup()">
 
 
-<b>
+<span style="font-size:x-large;">
 <a href="javascript:changeMode('advanced');">Perspective Correction</a> |
 <a href="javascript:changeMode('lab');">Image Lab</a> |
 <a href="javascript:changeMode('about');">About</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-</b>
-
-<span style="float:right">
+</span>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<span style="">
 
 <a class="FlattrButton" style="display:none;" rev="flattr;button:compact;" href="http://www.wizards23.net/projects2011/surfaceaugmenter/surfaceAugmenterBeta.html"></a>
 <noscript><a href="http://flattr.com/thing/394074/SurfaceAugmenter" target="_blank">
@@ -559,7 +758,10 @@ Inner Height of marker in mm: <input type="text" id="markerHeight" value="250" /
 </div>
 
 <div id="labControlls" style="display:none;">
+This is just a testing ground for some ideas I want to try out...<br/>
 	<input type="button" value="Apply Sobel Operator" onclick="handleTestClick();">
+	<input type="button" value="apply base" onclick="handleTestClick2();">
+	<input type="button" value="convolve" onclick="handleTestClick3();">
 </div>
 
 <div id="aboutControlls"  style="display:none;">
