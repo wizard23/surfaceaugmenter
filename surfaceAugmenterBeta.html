@@ -1,6 +1,13 @@
 <html>
 <head>
 <title>SurfaceAugmenter</title>
+<mta http-equiv="Content-Type" content="text/html; charset=utf-8"> 
+<meta http-equiv="expires" content="0"> 
+<meta name="author" content="wizards23+surfaces@gmail.com"> 
+<meta name="description" content="SurfaceAugmenter allows you to get images of flat surfaces that will fit exactly onto the flat surface it was taken from."> 
+<meta name="keywords" content="javascript, canvas, perspective correction, metalab"> 
+<meta name="ICBM" content="48.2179, 16.3331"> 
+<meta name="DC.title" content="Wizards23 - cybernetic renaissance project"> 
 <style> </style>
 <script type="text/javascript" src="libs/NumJS/NumJS.js"></script>
 <script type="text/javascript">NumJS.loader_html("libs/NumJS/")</script>
@@ -542,7 +549,7 @@ I use a unscaled printed version of <a href="markers/250mmx170mm.svg">this svg</
 The lines are vectorized with an antialiased search in the radon transformed gradient image (I always wanted to write this sentence:). Adjust the DPI of the output image to get more detail
 but be aware that the resulting image might be huge.
 <br/><br/>
-Clifford's NumJS is used for solving the 8-dimensional linear equation that appears in the 
+Clifford's <a href="https://github.com/cliffordwolf/NumJS">NumJS</a> is used for solving the 8-dimensional linear equation that appears in the 
 perspective matrix calculations...and thanks to clifford also for writing 
 <a href="http://svn.clifford.at/handicraft/2011/cliprect/cliprect.cc">cliprect.cc</a>...my perspective correction code is just 
 a 1:1 translation of clifford's code to js (so this makes this webpage GPL I guess:). Thanks to bernhard for showing me the radon transform in the context of line vectorization :)
