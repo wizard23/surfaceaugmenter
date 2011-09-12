@@ -562,6 +562,7 @@ Inner Height of marker in mm: <input type="text" id="markerHeight" value="250" /
 
 <div id="aboutControlls">
 The basic idea is this: You attach a printed marker (a black rectangle, I use <a href="markers/250mmx170mm.svg">this svg</a> which has an inner size of 170x250mm) next to the flat surface you are interested in (in this example a star wars poster that you want to augment somehow) and take a picture. Because we have the marker and we know its size in the real world we can automagically do a size and perspective correction of the flat surface. You can then modify the corrected image in gimp or photoshop and when you print it out it will fit right into the place where the image came from: the real world flat surface :)
+The whole thing runs in javascript in the webbrowser thanks to html5 :)
 <br/><br/>
 The perspective and scaling is derived from the vectorized inner contour of the black frame of the marker. 
 The lines are vectorized with an antialiased search in the radon transformed gradient image (I always wanted to write this sentence:). Adjust the DPI of the output image to get more detail
