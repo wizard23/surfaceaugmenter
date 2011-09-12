@@ -7,7 +7,21 @@
 <meta name="description" content="SurfaceAugmenter allows you to get images of flat surfaces that will fit exactly onto the flat surface it was taken from."> 
 <meta name="keywords" content="javascript, canvas, perspective correction, metalab"> 
 <meta name="ICBM" content="48.2179, 16.3331"> 
-<meta name="DC.title" content="Wizards23 - cybernetic renaissance project"> 
+<meta name="DC.title" content="Wizards23 - cybernetic renaissance project">
+
+
+<script type="text/javascript">
+/* <![CDATA[ */
+    (function() {
+        var s = document.createElement('script'), t = document.getElementsByTagName('script')[0];
+        s.type = 'text/javascript';
+        s.async = true;
+        s.src = 'http://api.flattr.com/js/0.6/load.js?mode=auto';
+        t.parentNode.insertBefore(s, t);
+    })();
+/* ]]> */
+</script>
+ 
 <style> </style>
 <script type="text/javascript" src="libs/NumJS/NumJS.js"></script>
 <script type="text/javascript">NumJS.loader_html("libs/NumJS/")</script>
@@ -497,11 +511,14 @@ function getDpi() {
 					
 </head>
 <body onload="setup()">
-What do you want to do today? 
-<a href="javascript:changeMode('auto');">Auto Perspective Correction</a> |
-<a href="javascript:changeMode('advanced');">Advandced Perspective Correction</a> |
+<b>
+<a href="javascript:changeMode('advanced');">Perspective Correction</a> |
 <a href="javascript:changeMode('lab');">Image Lab</a> |
-<a href="javascript:changeMode('about');">About</a> 
+<a href="javascript:changeMode('about');">About</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</b>
+<a class="FlattrButton" style="display:none;" rev="flattr;button:compact;" href="http://www.wizards23.net/projects2011/surfaceaugmenter/surfaceAugmenterBeta.html"></a>
+<noscript><a href="http://flattr.com/thing/394074/SurfaceAugmenter" target="_blank">
+<img src="http://api.flattr.com/button/flattr-badge-large.png" alt="Flattr this" title="Flattr this" border="0" /></a></noscript>
 <hr/>
 <form name="controls" action="">
 <div id="autoControlls">
@@ -544,8 +561,9 @@ Inner Height of marker in mm: <input type="text" id="markerHeight" value="250" /
 </div>
 
 <div id="aboutControlls">
+The basic idea is this: You attach a printed marker (a black rectangle, I use <a href="markers/250mmx170mm.svg">this svg</a> which has an inner size of 170x250mm) next to the flat surface you are interested in (in this example a star wars poster that you want to augment somehow) and take a picture. Because we have the marker and we know its size in the real world we can automagically do a size and perspective correction of the flat surface. You can then modify the corrected image in gimp or photoshop and when you print it out it will fit right into the place where the image came from: the real world flat surface :)
+<br/><br/>
 The perspective and scaling is derived from the vectorized inner contour of the black frame of the marker. 
-I use a unscaled printed version of <a href="markers/250mmx170mm.svg">this svg</a> which has an inner size of 170x250mm.
 The lines are vectorized with an antialiased search in the radon transformed gradient image (I always wanted to write this sentence:). Adjust the DPI of the output image to get more detail
 but be aware that the resulting image might be huge.
 <br/><br/>
