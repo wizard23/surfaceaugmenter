@@ -277,7 +277,7 @@ function doCorrection(pixels, pointsIn, context, bestGroup) {
 					idxOut += 4;
 				}
 			}
-			dumpImageData(pixelsOut, "<br />Perspective corrected image (Filter: None, Nearest Neighbour)");
+			dumpImageData(pixelsOut, "<br />Perspective corrected image (Filter: None, Nearest Neighbour)<br/>");
 		}		
 		if (document.getElementById("optionOutputBilinear").checked) {
 			var pixelsOut = context.createImageData(Math.ceil(maxX-minX), Math.ceil(maxY-minY));
@@ -326,7 +326,7 @@ function doCorrection(pixels, pointsIn, context, bestGroup) {
 					idxOut += 4;
 				}
 			}
-			dumpImageData(pixelsOut, "<br />Perspective corrected image (Filter: Bilinear)");	
+			dumpImageData(pixelsOut, "<br />Perspective corrected image (Filter: Bilinear)<br/>");	
 		}
 		if (document.getElementById("optionOutputImageMagick").checked) 
 		{
@@ -341,7 +341,7 @@ function doCorrection(pixels, pointsIn, context, bestGroup) {
 sizeText = "2000x2000"
 			var cmdLine = "convert " + fileName + " -virtual-pixel transparent +distort Perspective \"" + 
 				pointsText + "\" +repage "  +  fileName + "_corrected.jpg";
-			dumpHTML("<br/>ImageMagick Command Line: <div style='border-width:2px; border-style:solid;  border-color:red; padding:10px;'>" + cmdLine + "</div>");
+			dumpHTML("<br/>ImageMagick Command Line: <div style='border-width:2px; border-style:solid;  border-color:black; padding:10px;'>" + cmdLine + "</div>");
 		}
 		
 
