@@ -6,9 +6,6 @@
 <meta name="author" content="wizards23+surfaces@gmail.com"> 
 <meta name="description" content="SurfaceAugmenter allows you to get images of flat surfaces that will fit exactly onto the flat surface it was taken from."> 
 <meta name="keywords" content="javascript, canvas, perspective correction, metalab"> 
-<meta name="ICBM" content="48.2179, 16.3331"> 
-<meta name="DC.title" content="Wizards23 - cybernetic renaissance project">
-
 
 <script type="text/javascript">
 /* <![CDATA[ */
@@ -457,7 +454,7 @@ function handleTestClick()
 }
 
 
-var allowedModes = ['auto', 'advanced', 'lab', 'about'];
+var allowedModes = ['advanced', 'lab', 'about'];
 var currentMode;
 
 function changeMode(mode) {
@@ -511,19 +508,24 @@ function getDpi() {
 					
 </head>
 <body onload="setup()">
+
+
 <b>
 <a href="javascript:changeMode('advanced');">Perspective Correction</a> |
 <a href="javascript:changeMode('lab');">Image Lab</a> |
 <a href="javascript:changeMode('about');">About</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 </b>
+
+<span style="float:right">
+
 <a class="FlattrButton" style="display:none;" rev="flattr;button:compact;" href="http://www.wizards23.net/projects2011/surfaceaugmenter/surfaceAugmenterBeta.html"></a>
 <noscript><a href="http://flattr.com/thing/394074/SurfaceAugmenter" target="_blank">
 <img src="http://api.flattr.com/button/flattr-badge-large.png" alt="Flattr this" title="Flattr this" border="0" /></a></noscript>
+
+</span>
+
 <hr/>
 <form name="controls" action="">
-<div id="autoControlls">
-Click inside the inner white area of the marker to start the perspective correction.
-</div>
 
 <div id="advancedControlls">
 <fieldset>
@@ -556,11 +558,11 @@ Inner Height of marker in mm: <input type="text" id="markerHeight" value="250" /
  </fieldset>
 </div>
 
-<div id="labControlls">
+<div id="labControlls" style="display:none;">
 	<input type="button" value="Apply Sobel Operator" onclick="handleTestClick();">
 </div>
 
-<div id="aboutControlls">
+<div id="aboutControlls"  style="display:none;">
 The basic idea is this: You attach a printed marker (a black rectangle, I use <a href="markers/250mmx170mm.svg">this svg</a> which has an inner size of 170x250mm) next to the flat surface you are interested in (in this example a star wars poster that you want to augment somehow) and take a picture. Because we have the marker and we know its size in the real world we can automagically do a size and perspective correction of the flat surface. You can then modify the corrected image in gimp or photoshop and when you print it out it will fit right into the place where the image came from: the real world flat surface :)
 The whole thing runs in javascript in the webbrowser thanks to html5 :)
 <br/><br/>
@@ -595,6 +597,9 @@ Change the Input Image: <input type="file" value="imageFile" id="imageFile" />
 Result Images will be created here.
 </div>
 <hr/>
-(GPL) by <a href="http://www.wizards23.net/">wizard23</a>
+<a class="FlattrButton" style="display:none;" rev="flattr;button:compact;" href="http://www.wizards23.net/projects2011/surfaceaugmenter/surfaceAugmenterBeta.html"></a>
+<noscript><a href="http://flattr.com/thing/394074/SurfaceAugmenter" target="_blank">
+<img src="http://api.flattr.com/button/flattr-badge-large.png" alt="Flattr this" title="Flattr this" border="0" /></a></noscript>
+ (GPL) by <a href="http://www.wizards23.net/">wizard23</a>
 </body>
 </html>
