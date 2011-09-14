@@ -64,12 +64,15 @@ function A2RGBA(pixels, context) {
 	return out;
 };
 
-function createImageDataA(width, height)
+function createImageDataA(width, height, value)
 {
 	var out = {};
 	out.data = [];
 	out.width = width;
 	out.height = height;
+	if (value != undefined)
+		APixelsFill(out, value)
+		
 	return out;
 }
 

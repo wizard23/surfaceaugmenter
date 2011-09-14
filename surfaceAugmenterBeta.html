@@ -41,7 +41,7 @@ var maskOutBlack = 100;
 
 function setup()
 {
-	changeMode('advanced');
+	changeMode('lab');
 
 	document.getElementById('imageFile').addEventListener('change', handleImageSelect, false);
 	document.getElementById('canvas').addEventListener('click', handleCanvasClick, false);
@@ -103,6 +103,11 @@ function handleCanvasClick(evt) {
 	var x = coords.x/imgScale;
 	var y = coords.y/imgScale;
 
+	if (currentMode == "lab") {
+		handleLabClick(x, y, true);
+		return;
+	}
+
 	if (document.getElementById("radioSearchTypeManual").checked)
 	{
 		if (x >= 0 && x < imgWidth && y >= 0 && y < imgHeight)
@@ -123,6 +128,8 @@ function handleCanvasClick(evt) {
 		ensureCaches(context, true);
 		x = Math.round(x);
 		y = Math.round(y);
+
+		/*
 
 		var whiteSum = 255;
 		var whiteVarsum = 0;
@@ -190,6 +197,11 @@ function handleCanvasClick(evt) {
 
 
 		applyMaskAlphaOnPixels(bwPixelsSobolev, maskPixels, bwPixelsSobolevClipped)
+		*/
+
+		var res = handleLabClick(x, y);
+		maskPixels = res[0];
+		bwPixelsSobolevClipped = res[1];
 
 		var bestGroup = findLineCandidates(pixels, maskPixels, bwPixelsSobolevClipped);
 		for (var i = 0; i < bestGroup.length; i++) {
@@ -626,8 +638,163 @@ function handleTestClick2()
 
 }
 
-function handleTestClick3()
+
+
+
+
+var STATE_INIT = 0;
+var STATE_WHITE = 1;
+
+function getA(pixels, x, y) {
+	var idx = y * pixels.width + x;
+	return pixels.data[idx];
+}
+
+function setA(pixels, x, y, val) {
+	var idx = y * pixels.width + x;
+	pixels.data[idx] = val;
+}
+
+			
+function mindOutline(x, y, seekFn, testFn, outlineFn, fillFn)
 {
+	while (!seekFn(x, y)) {
+		x++;
+	}
+
+	// assert(testFn(x,y)==false)
+	if (!testFn(x,y))
+		alert("I dont want to live like this! One part of you is saying true while the other is saying false!");
+	
+	
+	var posLeft = [], posRight = [];
+	var minY = -1, maxY = -1;
+	var dir = 2;
+	var startX = x, startY = y;
+	var done = false;
+	var dirCounter = 0;
+
+	while (!done) {
+		if (posLeft[y] == undefined || x < posLeft[y]) posLeft[y] = x;
+		if (posRight[y] == undefined || x > posRight[y]) posRight[y] = x;
+		if (minY < 0 || y < minY) minY = y; 
+		if (maxY < 0 || y > maxY) maxY = y; 
+
+		
+		if (dir < 0) dir = 3;
+		if (dir == 0) {
+			dx = 1, dy = 0;
+		}
+		else if (dir == 1) {
+			dx = 0, dy = 1;
+		}
+		else if (dir == 2) {
+			dx = -1, dy =0;
+		}
+		else {
+			dx = 0, dy = -1;		
+		}
+
+		var newX = x + dx;
+		var newY = y + dy;
+		if (testFn(newX, newY)) {
+			x = newX;
+			y = newY;
+			outlineFn(x, y, dx, dy);
+
+			dirCounter=0;			
+			dir--;
+			if (dir < 0) dir = 3;
+			
+			if (x == startX && y == startY) done = true;
+		}
+		else {
+			dir = (dir + 1) % 4;
+			dirCounter++;
+			if (dirCounter == 4) done = true;
+		}
+		
+	}
+
+	for (var fY = minY; fY <= maxY; fY++) {
+		for (var fX = posLeft[fY]; fX <= posRight[fY]; fX++) {
+			fillFn(fX,fY);
+		}
+	}
+}
+
+
+
+
+
+function handleLabClick(x, y, show)
+{
+	clearDump();
+
+	var canvas = document.getElementById('canvas');
+	var context = canvas.getContext('2d');
+
+	var pixels = context.getImageData(0,0, canvas.width, canvas.height);
+	var bwPixels = RGBA2A(pixels, context);
+	var mask = createImageDataA(pixels.width, pixels.height); //RGBA2A(pixels, context);
+	var bwPixelsSobolev = createImageDataA(pixels.width, pixels.height);
+	var bwPixelsSobolevClipped = createImageDataA(pixels.width, pixels.height);
+	applyKernelAlphaOnPixels(bwPixels, dxx, dyy, bwPixelsSobolev);
+
+	var seekState = STATE_INIT;
+
+	var blackFn = function(x, y) {
+		var val = getA(bwPixelsSobolev, x, y);
+		return val < 100;
+	}
+
+	var veryBlackFn = function(x, y) {
+		var val = getA(bwPixelsSobolev, x, y);
+		return val < 50;
+	}
+
+	var seekFn = function(x,y) {
+		if (seekState == STATE_INIT) {
+			if (!blackFn(x, y)) seekState = STATE_WHITE;
+			return false;
+		}
+		else if (seekState == STATE_WHITE) {
+			return veryBlackFn(x, y);
+		}
+		else {
+			alert("I dont want to live in inconsistent states!");
+		}
+	}
+
+	var fillFn = function(x, y) {
+		val = blackFn(x, y) ? maskInitBlack : maskLine;
+		setA(mask, x, y, val);
+		
+	}
+
+	var outlineFn = function(x, y, dx, dy) {
+		var dumdumduboidoooooIdoNothing = 1;
+	}
+
+	mindOutline(x, y, seekFn, veryBlackFn, outlineFn, fillFn);
+
+	applyMaskAlphaOnPixels(bwPixelsSobolev, mask, bwPixelsSobolevClipped)
+
+	
+	if (show) {
+		var grayPixels = A2RGBA(bwPixelsSobolevClipped, context);
+		dumpImageData(grayPixels, "clipped<br/>");
+
+		var grayPixels = A2RGBA(bwPixelsSobolev, context);
+		dumpImageData(grayPixels, "pixels<br/>");
+	}
+
+
+	//var grayPixels = A2RGBA(maskNice, context);
+	//dumpImageData(grayPixels, "pixels<br/>");
+	
+	return [mask, bwPixelsSobolevClipped];
+
 }
 
 
