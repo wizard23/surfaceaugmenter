@@ -31,7 +31,7 @@ function APixelsFill(pixels, value)
 
 function RGBA2A(pixels, context) {
 	var d = pixels.data;
-	var out = createImageDataA(pixels.width, pixels.height)
+	var out = createImageDataA(pixels.width, pixels.height);
 	var outData = out.data;
 
 	var j = 0;

@@ -33,7 +33,7 @@ var fileName = "test2.jpg";
 
 var imgScale = 1.0;
 var points = [];
-var pixels, bwPixels, maskPixels;
+var pixels, bwPixels;
 
 var maskInitBlack = 50;
 var maskLine = 200;
@@ -77,17 +77,15 @@ function clearCaches() {
 	bwPixels = null;
 }
 
-function ensureCaches(context, cacheRest) {
+function ensureCaches(cacheRest) {
+	var canvas = document.getElementById('canvas');
+	var context = canvas.getContext('2d');
+	
 	if (!pixels) {
 		pixels = context.getImageData(0,0, canvas.width, canvas.height);
 	}
 	if (cacheRest && !bwPixels) {
 		bwPixels = RGBA2A(pixels, context);
-		bwPixelsSobolev = createImageDataA(canvas.width, canvas.height);
-		applyKernelAlphaOnPixels(bwPixels, dxx, dyy, bwPixelsSobolev);
-		bwPixelsSobolevClipped = createImageDataA(canvas.width, canvas.height);
-		maskPixels = createImageDataA(canvas.width, canvas.height);
-		APixelsFill(maskPixels, 0);
 	}
 }
 
@@ -97,13 +95,15 @@ function handleCanvasClick(evt) {
 
 	clearDump();
 	
-	ensureCaches(context, false);
+	ensureCaches(false);
 
 	var coords = canvas.relMouseCoords(evt);
 	var x = coords.x/imgScale;
 	var y = coords.y/imgScale;
 
 	if (currentMode == "lab") {
+		x = Math.round(x);
+		y = Math.round(y);
 		handleLabClick(x, y, true);
 		return;
 	}
@@ -125,7 +125,7 @@ function handleCanvasClick(evt) {
 		}
 	}
 	else {
-		ensureCaches(context, true);
+		ensureCaches(true);
 		x = Math.round(x);
 		y = Math.round(y);
 
@@ -379,25 +379,25 @@ sizeText = "2000x2000"
 	
 		if (document.getElementById("optionShowSobel").checked) 
 		{
-			ensureCaches(context, true);
+			ensureCaches(true);
 			var grayPixels = A2RGBA(bwPixelsSobolev, context);
 			dumpImageData(grayPixels, "<br />magnitude of the sobel gradient<br/>");
 		}
 		if (document.getElementById("optionShowMask").checked) 
 		{
-			ensureCaches(context, true);
+			ensureCaches(true);
 			var grayPixels = A2RGBA(maskPixels, context);
 			dumpImageData(grayPixels, "<br />the mask used for clipping the gradient for the line search<br/>");
 		}
 		if (document.getElementById("optionShowClippedSobel").checked) 
 		{
-			ensureCaches(context, true);
+			ensureCaches(true);
 			var grayPixels = A2RGBA(bwPixelsSobolevClipped, context);
 			dumpImageData(grayPixels, "<br />clipped magnitude of the sobel gradient<br/>");
 		}
 		if (document.getElementById("optionShowClippedSobelLines").checked) 
 		{
-			ensureCaches(context, true);
+			ensureCaches(true);
 			var grayPixels = A2RGBA(bwPixelsSobolevClipped, context);
 			if (bestGroup != null) {
 			for (var i = 0; i < bestGroup.length; i++) {		
@@ -668,7 +668,7 @@ function mindOutline(x, y, seekFn, testFn, outlineFn, fillFn)
 	
 	
 	var posLeft = [], posRight = [];
-	var minY = -1, maxY = -1;
+	var minY = y, maxY = y;
 	var dir = 2;
 	var startX = x, startY = y;
 	var done = false;
@@ -677,8 +677,8 @@ function mindOutline(x, y, seekFn, testFn, outlineFn, fillFn)
 	while (!done) {
 		if (posLeft[y] == undefined || x < posLeft[y]) posLeft[y] = x;
 		if (posRight[y] == undefined || x > posRight[y]) posRight[y] = x;
-		if (minY < 0 || y < minY) minY = y; 
-		if (maxY < 0 || y > maxY) maxY = y; 
+		if (y < minY) minY = y; 
+		if (y > maxY) maxY = y; 
 
 		
 		if (dir < 0) dir = 3;
@@ -716,7 +716,9 @@ function mindOutline(x, y, seekFn, testFn, outlineFn, fillFn)
 		
 	}
 
+	alert(minY + " " + maxY);
 	for (var fY = minY; fY <= maxY; fY++) {
+		//alert(minY + " " + maxY);
 		for (var fX = posLeft[fY]; fX <= posRight[fY]; fX++) {
 			fillFn(fX,fY);
 		}
@@ -731,16 +733,21 @@ function handleLabClick(x, y, show)
 {
 	clearDump();
 
+	ensureCaches(true);
+
+	alert(x + " " + y);
+	
 	var canvas = document.getElementById('canvas');
 	var context = canvas.getContext('2d');
 
-	var pixels = context.getImageData(0,0, canvas.width, canvas.height);
-	var bwPixels = RGBA2A(pixels, context);
-	var mask = createImageDataA(pixels.width, pixels.height); //RGBA2A(pixels, context);
-	var bwPixelsSobolev = createImageDataA(pixels.width, pixels.height);
-	var bwPixelsSobolevClipped = createImageDataA(pixels.width, pixels.height);
+
+	var mask = createImageDataA(bwPixels.width, bwPixels.height); //RGBA2A(pixels, context);
+	var bwPixelsSobolev = createImageDataA(bwPixels.width, bwPixels.height);
+	var bwPixelsSobolevClipped = createImageDataA(bwPixels.width, bwPixels.height);
 	applyKernelAlphaOnPixels(bwPixels, dxx, dyy, bwPixelsSobolev);
 
+
+	alert("chaches done");
 	var seekState = STATE_INIT;
 
 	var blackFn = function(x, y) {
@@ -777,9 +784,10 @@ function handleLabClick(x, y, show)
 	}
 
 	mindOutline(x, y, seekFn, veryBlackFn, outlineFn, fillFn);
+	alert("outline done");
 
 	applyMaskAlphaOnPixels(bwPixelsSobolev, mask, bwPixelsSobolevClipped)
-
+	alert("masking done");
 	
 	if (show) {
 		var grayPixels = A2RGBA(bwPixelsSobolevClipped, context);
@@ -788,6 +796,7 @@ function handleLabClick(x, y, show)
 		var grayPixels = A2RGBA(bwPixelsSobolev, context);
 		dumpImageData(grayPixels, "pixels<br/>");
 	}
+	alert("DOne");
 
 
 	//var grayPixels = A2RGBA(maskNice, context);
